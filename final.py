@@ -18,28 +18,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (EXTRA GÜVENLİK) ---
-# config.toml dosyası işin %90'ını yapar, burası ince ayardır.
+# --- CSS SİHİRLERİ (DÜZELTİLMİŞ VERSİYON) ---
 st.markdown("""
 <style>
-    /* Sol Menü Arka Planı (Uzman Yeşili) */
+    /* 1. MENÜ AÇMA/KAPAMA DÜĞMESİNİ KURTARMA */
+    /* Header'ı gizlemiyoruz, sadece şeffaf yapıyoruz ki düğme görünsün */
+    [data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0);
+    }
+    
+    /* Menü kapandığında çıkan OK (>) işaretinin rengi */
+    [data-testid="stSidebarCollapsedControl"] {
+        color: #004D40 !important;
+        background-color: white;
+        border-radius: 0 10px 10px 0;
+        border: 1px solid #004D40;
+    }
+
+    /* 2. SOL MENÜ TASARIMI */
     [data-testid="stSidebar"] {
         background-color: #004D40;
         background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
     }
-    
-    /* Menüdeki Yazılar */
     [data-testid="stSidebar"] * {
         color: white !important;
     }
 
-    /* Tablo Başlıkları (Header) */
+    /* 3. TABLO BAŞLIKLARI */
     [data-testid="stDataFrame"] th {
         background-color: #004D40 !important;
         color: white !important;
     }
 
-    /* Metrik Kartları */
+    /* 4. KARTLAR VE METRİKLER */
     div[data-testid="stMetric"] {
         background-color: #FFFFFF !important;
         border: 1px solid #E0E0E0 !important;
@@ -48,12 +59,10 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         border-left: 5px solid #E67E22 !important;
     }
-    
-    /* Metrik Yazıları */
     div[data-testid="stMetricLabel"] p { color: #555 !important; font-weight: bold; }
     div[data-testid="stMetricValue"] div { color: #000 !important; }
 
-    /* Butonlar */
+    /* 5. BUTONLAR */
     .stButton > button {
         background-color: #E67E22 !important;
         color: white !important;
@@ -65,7 +74,7 @@ st.markdown("""
         background-color: #D35400 !important;
     }
 
-    /* Fiş Kutusu */
+    /* 6. FİŞ KUTUSU */
     .fiş-kutusu {
         background-color: #E3F2FD; 
         padding: 20px; 
@@ -78,13 +87,13 @@ st.markdown("""
     .fiş-tutar { color: #0D47A1; font-weight: 800; font-size: 2.5em; margin: 10px 0; }
     .fiş-detay { color: #455A64; font-size: 1em; font-weight: bold;}
 
-    /* Genel Yazı Rengi Zorlaması */
+    /* Genel Yazı Rengi */
     h1, h2, h3, p, span, div { color: #333333; }
     
-    /* Menü ve Footer Gizleme */
+    /* Sadece Footer ve Hamburger Menüyü Gizle (Oku değil) */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -132,7 +141,6 @@ init_db()
 # 3. YARDIMCI FONKSİYONLAR
 # =========================================================
 def show_logo():
-    # Logo kontrolü - Büyük/Küçük harf duyarlı
     if os.path.exists("Uzman.png"):
         st.sidebar.image("Uzman.png", use_container_width=True)
     elif os.path.exists("uzman.png"):
@@ -276,7 +284,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v2.1")
+    st.sidebar.caption("Yönetim Paneli v2.2")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
@@ -313,7 +321,6 @@ if check_password():
             
             st.markdown("---")
             
-            # GRAFİKLER (Şeffaf Arka Plan Ayarı)
             g1, g2 = st.columns(2)
             with g1:
                 st.subheader("🔥 En Çok Satan 10 Ürün")
