@@ -3,4 +3,5 @@ numpy
 openpyxl
 plotly
 Pillow
+fpdf
 pypdf
