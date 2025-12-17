@@ -18,16 +18,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (DÜZELTİLMİŞ VERSİYON) ---
+# --- CSS SİHİRLERİ (LOGO DÜZELTMELİ VERSİYON) ---
 st.markdown("""
 <style>
     /* 1. MENÜ AÇMA/KAPAMA DÜĞMESİNİ KURTARMA */
-    /* Header'ı gizlemiyoruz, sadece şeffaf yapıyoruz ki düğme görünsün */
     [data-testid="stHeader"] {
         background-color: rgba(0,0,0,0);
     }
     
-    /* Menü kapandığında çıkan OK (>) işaretinin rengi */
     [data-testid="stSidebarCollapsedControl"] {
         color: #004D40 !important;
         background-color: white;
@@ -42,6 +40,16 @@ st.markdown("""
     }
     [data-testid="stSidebar"] * {
         color: white !important;
+    }
+
+    /* --- YENİ: SOL MENÜ LOGO DÜZELTMESİ --- */
+    /* Logonun arkasına beyaz, yuvarlak köşeli bir kutu ekler */
+    [data-testid="stSidebar"] > div:first-child img {
+        background-color: #ffffff;
+        padding: 15px; /* Logonun etrafında boşluk */
+        border-radius: 15px; /* Köşeleri yuvarlat */
+        margin-bottom: 20px; /* Altına boşluk bırak */
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Hafif gölge ver */
     }
 
     /* 3. TABLO BAŞLIKLARI */
@@ -90,7 +98,6 @@ st.markdown("""
     /* Genel Yazı Rengi */
     h1, h2, h3, p, span, div { color: #333333; }
     
-    /* Sadece Footer ve Hamburger Menüyü Gizle (Oku değil) */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
@@ -141,12 +148,14 @@ init_db()
 # 3. YARDIMCI FONKSİYONLAR
 # =========================================================
 def show_logo():
+    # Logo varsa gösterir
     if os.path.exists("Uzman.png"):
         st.sidebar.image("Uzman.png", use_container_width=True)
     elif os.path.exists("uzman.png"):
         st.sidebar.image("uzman.png", use_container_width=True)
     else:
-        st.sidebar.markdown("<h2 style='color:white; text-align:center;'>🚘 UZMAN OTO</h2>", unsafe_allow_html=True)
+        # Logo yoksa şık bir yazı
+        st.sidebar.markdown("<h2 style='color:white; text-align:center; background-color:rgba(255,255,255,0.1); padding:10px; border-radius:10px;'>🚘 UZMAN OTO</h2>", unsafe_allow_html=True)
 
 def check_password():
     if "logged_in" not in st.session_state:
@@ -284,7 +293,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v2.2")
+    st.sidebar.caption("Yönetim Paneli v2.3")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
