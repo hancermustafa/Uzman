@@ -5,3 +5,4 @@ plotly
 Pillow
 fpdf
 pypdf
+xlsxwriter
