@@ -6,8 +6,8 @@ from datetime import datetime
 import time
 import io
 import os
-import shutil
 from fpdf import FPDF
+# Not: xlsxwriter import etmemize gerek yok, pandas arka planda kullanır ama requirements.txt'de olması şart.
 
 # =========================================================
 # 1. AYARLAR VE TASARIM
@@ -19,39 +19,74 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS TASARIM VE MENÜ GİZLEME ---
+# --- CSS SİHİRLERİ (GÖRÜNÜM VE MENÜ DÜZELTMELERİ) ---
 st.markdown("""
 <style>
-    /* STANDART MENÜ GİZLEME (Clean UI) */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* 1. ZORUNLU AYDINLIK MOD (Light Mode Force) */
+    /* Kullanıcı Dark Mode kullansa bile biz beyaz zemin zorluyoruz */
+    [data-testid="stAppViewContainer"] {
+        background-color: #FFFFFF;
+        color: #000000;
+    }
     
-    /* SOL MENÜ - UZMAN YEŞİLİ */
-    [data-testid="stSidebar"] { background-color: #004D40; border-right: 1px solid #00332A; }
-    [data-testid="stSidebar"] * { color: #FFFFFF !important; }
-    
-    /* SEÇİLİ MENÜ */
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"] span {
-        color: #FFB74D !important; font-weight: bold !important; font-size: 1.1em !important;
+    [data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0); /* Şeffaf Header */
     }
 
-    /* KARTLAR (METRICS) */
-    .stMetric {
-        background-color: #F8F9F9; padding: 15px; border-radius: 10px;
-        border: 1px solid #D6DBDF; border-left: 5px solid #E67E22;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    /* 2. SOL MENÜ (SIDEBAR) TASARIMI */
+    [data-testid="stSidebar"] {
+        background-color: #004D40; /* Uzman Yeşili */
+        border-right: 1px solid #00332A;
+    }
+    /* Sol menüdeki yazıların rengi */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p {
+        color: #FFFFFF !important;
     }
     
+    /* MENÜ AÇMA/KAPAMA BUTONU (SOL ÜSTTEKİ OK) */
+    [data-testid="stSidebarCollapsedControl"] {
+        color: #004D40 !important; /* Ok rengi yeşil olsun ki beyaz zeminde görünsün */
+        background-color: #FFFFFF;
+        border-radius: 5px;
+        border: 1px solid #004D40;
+        display: block !important; /* Gizlenmesini engelle */
+    }
+
+    /* 3. KARTLAR VE METRİKLER (Okunurluk Ayarı) */
+    div[data-testid="stMetric"], .stMetric {
+        background-color: #F8F9F9 !important; /* Hafif Gri Zemin */
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #D6DBDF;
+        border-left: 5px solid #E67E22; /* Turuncu Çizgi */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    /* Kart içindeki yazı renklerini siyaha zorla (Dark mode bozulmasın diye) */
+    div[data-testid="stMetricLabel"] p { color: #555555 !important; }
+    div[data-testid="stMetricValue"] div { color: #000000 !important; }
+
+    /* 4. TABLOLAR VE DATA FRAME */
+    [data-testid="stDataFrame"] {
+        background-color: #FFFFFF;
+    }
+    
+    /* 5. GİRİŞ KUTULARI (Input Fields) */
+    .stTextInput input, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
+        border: 1px solid #ccc;
+    }
+
     /* MAVİ FİŞ KUTUSU */
     .fiş-kutusu {
         background-color: #E3F2FD; padding: 20px; border-radius: 12px; 
         border: 2px solid #1565C0; text-align: center; margin: 20px 0;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .fiş-baslik { color: #1565C0; font-weight: bold; font-size: 1.2em; }
-    .fiş-tutar { color: #0D47A1; font-weight: 800; font-size: 2.5em; margin: 10px 0; }
-    .fiş-detay { color: #455A64; font-size: 1em; font-family: monospace; font-weight: bold;}
+    .fiş-baslik { color: #1565C0 !important; font-weight: bold; font-size: 1.2em; }
+    .fiş-tutar { color: #0D47A1 !important; font-weight: 800; font-size: 2.5em; margin: 10px 0; }
+    .fiş-detay { color: #455A64 !important; font-size: 1em; font-family: monospace; font-weight: bold;}
 
     /* BUTONLAR */
     .stButton>button {
@@ -61,9 +96,10 @@ st.markdown("""
     }
     .stButton>button:hover { background-color: #D35400; transform: scale(1.01); }
     
-    /* TABLO BAŞLIK GİZLEME */
-    thead tr th:first-child {display:none}
-    tbody th {display:none}
+    /* İstenmeyen elementleri gizle ama menü butonunu elleme */
+    #MainMenu {visibility: hidden;} 
+    footer {visibility: hidden;}
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -125,7 +161,7 @@ def check_password():
             else:
                 st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Renault_2009_logo.svg/1200px-Renault_2009_logo.svg.png", width=200)
                 
-            st.title("GÜVENLİ GİRİŞ")
+            st.markdown("<h2 style='text-align: center; color: black;'>GÜVENLİ GİRİŞ</h2>", unsafe_allow_html=True)
             with st.form("login_form"):
                 user = st.text_input("Kullanıcı Adı")
                 pw = st.text_input("Şifre", type="password")
@@ -204,6 +240,7 @@ def process_excel_import(uploaded_file):
 
 def create_excel(df):
     output = io.BytesIO()
+    # Excel oluştururken xlsxwriter motorunu kullanıyoruz
     with pd.ExcelWriter(output, engine='xlsxwriter') as w: df.to_excel(w, index=False)
     return output.getvalue()
 
@@ -265,7 +302,7 @@ if check_password():
 
     # --- 1. DASHBOARD ---
     if menu == "📊 Dashboard":
-        st.title("🚀 Ana Kontrol Paneli")
+        st.markdown("<h1 style='color:black;'>🚀 Ana Kontrol Paneli</h1>", unsafe_allow_html=True)
         st.markdown("---")
         
         if not df_stok.empty:
@@ -308,7 +345,7 @@ if check_password():
 
     # --- 2. STOK YÖNETİMİ ---
     elif menu == "📦 Stok Yönetimi":
-        st.title("📦 Stok Kartları")
+        st.markdown("<h1 style='color:black;'>📦 Stok Kartları</h1>", unsafe_allow_html=True)
         
         tab_list, tab_ekle = st.tabs(["📋 Stok Listesi", "➕ Tekil Ürün Ekle/Düzenle"])
         
@@ -366,7 +403,7 @@ if check_password():
 
     # --- 3. HAREKET GİRİŞİ ---
     elif menu == "📝 Hareket Girişi":
-        st.title("⚡ Satış Ekranı")
+        st.markdown("<h1 style='color:black;'>⚡ Satış Ekranı</h1>", unsafe_allow_html=True)
         c_l, c_r = st.columns([1, 2])
         with c_l:
             st.info("İşlem Bilgileri")
@@ -412,9 +449,9 @@ if check_password():
                         conn.commit()
                     st.success("İşlem Tamam!"); time.sleep(1); st.rerun()
 
-    # --- 4. RAPORLAR (BAŞLIK DÜZELTİLDİ) ---
+    # --- 4. RAPORLAR ---
     elif menu == "📈 Raporlar & Analiz":
-        st.title("📈 Rapor Merkezi")
+        st.markdown("<h1 style='color:black;'>📈 Rapor Merkezi</h1>", unsafe_allow_html=True)
         t1, t2, t3, t4, t5 = st.tabs(["📦 Stok Envanter Raporu", "📊 ABC Analizi", "💰 Kârlılık", "🕸️ Ölü Stoklar", "Hareket Listeleme"])
         
         with t1:
@@ -450,7 +487,7 @@ if check_password():
             indirme_butonlari(olu, "olu_stok")
             
         with t5:
-            st.subheader("📋 Hareketler Listesi") # <-- BURAYI DEĞİŞTİRDİM
+            st.subheader("📋 Hareketler Listesi")
             df_log = df_har.sort_values('id', ascending=False)
             st.dataframe(df_log, use_container_width=True)
             indirme_butonlari(df_log, "hareket_dokumu")
@@ -471,7 +508,7 @@ if check_password():
 
     # --- 5. AYARLAR ---
     elif menu == "⚙️ Ayarlar":
-        st.title("⚙️ Sistem Ayarları")
+        st.markdown("<h1 style='color:black;'>⚙️ Sistem Ayarları</h1>", unsafe_allow_html=True)
         t1, t2, t3, t4 = st.tabs(["📥 Excel Stok Yükle", "📝 Sistem Tanımları", "🔐 Şifre Değiştir", "💾 Veritabanı Yedekle"])
         
         with t1:
