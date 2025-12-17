@@ -9,7 +9,7 @@ import os
 from fpdf import FPDF
 
 # =========================================================
-# 1. AYARLAR VE TASARIM (KESİN ÇÖZÜM)
+# 1. AYARLAR VE TASARIM
 # =========================================================
 st.set_page_config(
     page_title="Uzman Otomotiv",
@@ -18,91 +18,54 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (GLOBAL THEME FORCE) ---
-# Bu blok, tarayıcı Dark Mode olsa bile renkleri zorla düzeltir.
+# --- CSS SİHİRLERİ (EXTRA GÜVENLİK) ---
+# config.toml dosyası işin %90'ını yapar, burası ince ayardır.
 st.markdown("""
 <style>
-    /* 1. TÜM SAYFAYI AYDINLIK MODA ZORLA */
-    :root {
-        --primary-color: #E67E22;
-        --background-color: #FFFFFF;
-        --secondary-background-color: #F0F2F6;
-        --text-color: #000000;
-        --font: sans-serif;
+    /* Sol Menü Arka Planı (Uzman Yeşili) */
+    [data-testid="stSidebar"] {
+        background-color: #004D40;
+        background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
     }
     
-    /* Ana arka plan */
-    .stApp {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-    }
-
-    /* 2. SOL MENÜ (SIDEBAR) - UZMAN YEŞİLİ */
-    [data-testid="stSidebar"] {
-        background-color: #004D40 !important;
-        border-right: 1px solid #00251a;
-    }
-    /* Sidebar içindeki tüm yazılar BEYAZ */
+    /* Menüdeki Yazılar */
     [data-testid="stSidebar"] * {
-        color: #FFFFFF !important;
-    }
-    /* Sidebar'daki linkler ve inputlar */
-    [data-testid="stSidebar"] a { color: #FFB74D !important; }
-
-    /* 3. INPUT KUTULARI (Yazı Rengi Sorunu Çözümü) */
-    /* Inputların içi beyaz, yazısı siyah olsun */
-    .stTextInput input, .stNumberInput input, .stSelectbox div, .stTextArea textarea {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border-color: #ced4da !important;
-    }
-    /* Selectbox açılır menü yazıları */
-    div[data-baseweb="select"] span {
-        color: #000000 !important;
-    }
-    /* Dropdown seçenekleri */
-    div[role="listbox"] ul {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
+        color: white !important;
     }
 
-    /* 4. KARTLAR VE METRİKLER */
-    div[data-testid="stMetric"], .stMetric {
-        background-color: #F8F9FA !important;
-        border: 1px solid #dee2e6 !important;
-        padding: 15px !important;
-        border-radius: 10px !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
-        border-left: 5px solid #E67E22 !important;
-    }
-    div[data-testid="stMetricLabel"] p { color: #666666 !important; }
-    div[data-testid="stMetricValue"] div { color: #000000 !important; }
-
-    /* 5. TABLOLAR (Dataframe) */
-    [data-testid="stDataFrame"] {
-        background-color: #FFFFFF !important;
-    }
-    [data-testid="stDataFrame"] div {
-        color: #000000 !important;
-    }
-    /* Tablo başlıkları */
+    /* Tablo Başlıkları (Header) */
     [data-testid="stDataFrame"] th {
         background-color: #004D40 !important;
         color: white !important;
     }
 
-    /* 6. BUTONLAR */
+    /* Metrik Kartları */
+    div[data-testid="stMetric"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E0E0E0 !important;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border-left: 5px solid #E67E22 !important;
+    }
+    
+    /* Metrik Yazıları */
+    div[data-testid="stMetricLabel"] p { color: #555 !important; font-weight: bold; }
+    div[data-testid="stMetricValue"] div { color: #000 !important; }
+
+    /* Butonlar */
     .stButton > button {
         background-color: #E67E22 !important;
         color: white !important;
         border: none;
+        border-radius: 8px;
         font-weight: bold;
     }
     .stButton > button:hover {
         background-color: #D35400 !important;
     }
 
-    /* 7. ÖZEL FİŞ KUTUSU */
+    /* Fiş Kutusu */
     .fiş-kutusu {
         background-color: #E3F2FD; 
         padding: 20px; 
@@ -111,18 +74,17 @@ st.markdown("""
         text-align: center; 
         margin: 20px 0;
     }
-    .fiş-baslik { color: #1565C0 !important; font-weight: bold; font-size: 1.2em; }
-    .fiş-tutar { color: #0D47A1 !important; font-weight: 800; font-size: 2.5em; margin: 10px 0; }
-    .fiş-detay { color: #455A64 !important; font-size: 1em; font-family: monospace; font-weight: bold;}
+    .fiş-baslik { color: #1565C0; font-weight: bold; font-size: 1.2em; }
+    .fiş-tutar { color: #0D47A1; font-weight: 800; font-size: 2.5em; margin: 10px 0; }
+    .fiş-detay { color: #455A64; font-size: 1em; font-weight: bold;}
 
-    /* Genel Başlıklar */
-    h1, h2, h3, h4, p, li { color: #000000 !important; }
+    /* Genel Yazı Rengi Zorlaması */
+    h1, h2, h3, p, span, div { color: #333333; }
     
-    /* Header ve Footer gizleme */
+    /* Menü ve Footer Gizleme */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    
 </style>
 """, unsafe_allow_html=True)
 
@@ -170,12 +132,13 @@ init_db()
 # 3. YARDIMCI FONKSİYONLAR
 # =========================================================
 def show_logo():
+    # Logo kontrolü - Büyük/Küçük harf duyarlı
     if os.path.exists("Uzman.png"):
         st.sidebar.image("Uzman.png", use_container_width=True)
     elif os.path.exists("uzman.png"):
         st.sidebar.image("uzman.png", use_container_width=True)
     else:
-        st.sidebar.markdown("## 🚘 UZMAN OTO")
+        st.sidebar.markdown("<h2 style='color:white; text-align:center;'>🚘 UZMAN OTO</h2>", unsafe_allow_html=True)
 
 def check_password():
     if "logged_in" not in st.session_state:
@@ -188,9 +151,9 @@ def check_password():
             if os.path.exists("Uzman.png"):
                 st.image("Uzman.png", width=200)
             else:
-                st.markdown("<h1 style='text-align: center;'>🔒</h1>", unsafe_allow_html=True)
+                st.markdown("<h1 style='text-align: center; color:#004D40;'>🚘</h1>", unsafe_allow_html=True)
                 
-            st.markdown("<h2 style='text-align: center; color: black;'>GÜVENLİ GİRİŞ</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: #333;'>YÖNETİM PANELİ</h2>", unsafe_allow_html=True)
             with st.form("login_form"):
                 user = st.text_input("Kullanıcı Adı")
                 pw = st.text_input("Şifre", type="password")
@@ -269,7 +232,6 @@ def process_excel_import(uploaded_file):
 
 def create_excel(df):
     output = io.BytesIO()
-    # xlsxwriter kütüphanesi yoksa hata vermemesi için
     try:
         with pd.ExcelWriter(output, engine='xlsxwriter') as w: df.to_excel(w, index=False)
     except ModuleNotFoundError:
@@ -314,7 +276,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli")
+    st.sidebar.caption("Yönetim Paneli v2.1")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
@@ -330,7 +292,7 @@ if check_password():
 
     # --- 1. DASHBOARD ---
     if menu == "📊 Dashboard":
-        st.markdown("<h1 style='color:black;'>🚀 Ana Kontrol Paneli</h1>", unsafe_allow_html=True)
+        st.markdown("## 🚀 Ana Kontrol Paneli")
         st.markdown("---")
         
         if not df_stok.empty:
@@ -341,24 +303,25 @@ if check_password():
                 satis_degeri_net = (df_stok['MevcutStok'] * df_stok['SatisFiyati']).sum() / 1.20 
             
             tahmini_kar = satis_degeri_net - stok_maliyet_net
+            kritik = len(df_stok[df_stok['MevcutStok'] <= df_stok['KritikLimit']])
             
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("💰 Stok Maliyeti (NET)", f"{stok_maliyet_net:,.0f} TL", "Paçal Maliyet")
             c2.metric("💵 Satış Değeri (NET)", f"{satis_degeri_net:,.0f} TL", "KDV Hariç Fiyat")
             c3.metric("📈 Tahmini Brüt Kâr", f"{tahmini_kar:,.0f} TL", "Potansiyel Kazanç")
-            
-            kritik = len(df_stok[df_stok['MevcutStok'] <= df_stok['KritikLimit']])
-            c4.metric("⚠️ Kritik Stok", kritik, delta_color="inverse")
+            c4.metric("⚠️ Kritik Stok", kritik, "Acil", delta_color="inverse")
             
             st.markdown("---")
             
-            # GRAFİKLER BÖLÜMÜ
+            # GRAFİKLER (Şeffaf Arka Plan Ayarı)
             g1, g2 = st.columns(2)
             with g1:
                 st.subheader("🔥 En Çok Satan 10 Ürün")
                 if not df_har.empty:
                     top = df_har[df_har['IslemTipi'].str.contains('Çıkış')].groupby('UrunAdi')['Miktar'].sum().nlargest(10).reset_index()
-                    st.plotly_chart(px.bar(top, x='UrunAdi', y='Miktar', color='Miktar', color_continuous_scale='Oranges'), use_container_width=True)
+                    fig = px.bar(top, x='UrunAdi', y='Miktar', color='Miktar', color_continuous_scale='Oranges')
+                    fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color="black")
+                    st.plotly_chart(fig, use_container_width=True)
                 else: st.info("Veri yok.")
             
             with g2:
@@ -366,22 +329,25 @@ if check_password():
                 if 'RafYeri' in df_stok.columns:
                     df_stok['Koridor'] = df_stok['RafYeri'].str.split('-').str[0]
                     raf = df_stok[df_stok['Koridor'].str.isnumeric()].groupby('Koridor').size().reset_index(name='Adet')
-                    st.plotly_chart(px.pie(raf, values='Adet', names='Koridor', hole=0.4), use_container_width=True)
+                    fig2 = px.pie(raf, values='Adet', names='Koridor', hole=0.4)
+                    fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="black")
+                    st.plotly_chart(fig2, use_container_width=True)
                 else: st.info("Raf verisi yok.")
 
-            # 3. GRAFİK (Eksik Olan Buydu)
             st.markdown("---")
             st.subheader("📊 Marka/Model Dağılımı")
             if 'ModelUyumluluk' in df_stok.columns:
                 mod = df_stok['ModelUyumluluk'].value_counts().head(15).reset_index()
                 mod.columns = ['Model','Adet']
-                st.plotly_chart(px.bar(mod, x='Model', y='Adet', color='Adet', color_continuous_scale='Greens'), use_container_width=True)
+                fig3 = px.bar(mod, x='Model', y='Adet', color='Adet', color_continuous_scale='Greens')
+                fig3.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color="black")
+                st.plotly_chart(fig3, use_container_width=True)
                 
         else: st.warning("Veritabanı boş! Lütfen 'Ayarlar' menüsünden Excel dosyanızı yükleyiniz.")
 
     # --- 2. STOK YÖNETİMİ ---
     elif menu == "📦 Stok Yönetimi":
-        st.markdown("<h1 style='color:black;'>📦 Stok Kartları</h1>", unsafe_allow_html=True)
+        st.markdown("## 📦 Stok Kartları")
         
         tab_list, tab_ekle = st.tabs(["📋 Stok Listesi", "➕ Tekil Ürün Ekle/Düzenle"])
         
@@ -439,7 +405,7 @@ if check_password():
 
     # --- 3. HAREKET GİRİŞİ ---
     elif menu == "📝 Hareket Girişi":
-        st.markdown("<h1 style='color:black;'>⚡ Satış Ekranı</h1>", unsafe_allow_html=True)
+        st.markdown("## ⚡ Satış Ekranı")
         c_l, c_r = st.columns([1, 2])
         with c_l:
             st.info("İşlem Bilgileri")
@@ -487,7 +453,7 @@ if check_password():
 
     # --- 4. RAPORLAR ---
     elif menu == "📈 Raporlar & Analiz":
-        st.markdown("<h1 style='color:black;'>📈 Rapor Merkezi</h1>", unsafe_allow_html=True)
+        st.markdown("## 📈 Rapor Merkezi")
         t1, t2, t3, t4, t5 = st.tabs(["📦 Stok Envanter Raporu", "📊 ABC Analizi", "💰 Kârlılık", "🕸️ Ölü Stoklar", "Hareket Listeleme"])
         
         with t1:
@@ -544,7 +510,7 @@ if check_password():
 
     # --- 5. AYARLAR ---
     elif menu == "⚙️ Ayarlar":
-        st.markdown("<h1 style='color:black;'>⚙️ Sistem Ayarları</h1>", unsafe_allow_html=True)
+        st.markdown("## ⚙️ Sistem Ayarları")
         t1, t2, t3, t4 = st.tabs(["📥 Excel Stok Yükle", "📝 Sistem Tanımları", "🔐 Şifre Değiştir", "💾 Veritabanı Yedekle"])
         
         with t1:
