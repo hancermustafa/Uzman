@@ -7,104 +7,124 @@ import time
 import io
 import os
 from fpdf import FPDF
-# Not: xlsxwriter import etmemize gerek yok, pandas arka planda kullanır ama requirements.txt'de olması şart.
 
 # =========================================================
-# 1. AYARLAR VE TASARIM
+# 1. AYARLAR VE TASARIM (MODERN UI)
 # =========================================================
 st.set_page_config(
-    page_title=" Uzman Otomotiv ",
+    page_title="Uzman Otomotiv",
     page_icon="🚘",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (GÖRÜNÜM VE MENÜ DÜZELTMELERİ) ---
+# --- CSS SİHİRLERİ ---
+# Not: Bu ayarlar kullanıcı Dark Mode kullansa bile uygulamayı
+# Kurumsal (Beyaz/Yeşil) temada sabitler.
 st.markdown("""
 <style>
-    /* 1. ZORUNLU AYDINLIK MOD (Light Mode Force) */
-    /* Kullanıcı Dark Mode kullansa bile biz beyaz zemin zorluyoruz */
-    [data-testid="stAppViewContainer"] {
-        background-color: #FFFFFF;
-        color: #000000;
+    /* 1. GENEL SAYFA YAPISI (Zorunlu Beyaz Zemin) */
+    .stApp {
+        background-color: #f8f9fa; /* Çok açık gri (göz yormaz) */
+        color: #212529; /* Koyu antrasit yazı */
     }
     
-    [data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0); /* Şeffaf Header */
-    }
-
-    /* 2. SOL MENÜ (SIDEBAR) TASARIMI */
+    /* 2. SOL MENÜ (SIDEBAR) - UZMAN YEŞİLİ */
     [data-testid="stSidebar"] {
-        background-color: #004D40; /* Uzman Yeşili */
-        border-right: 1px solid #00332A;
+        background-color: #004D40;
+        background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
+        border-right: 1px solid #00251a;
     }
-    /* Sol menüdeki yazıların rengi */
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p {
-        color: #FFFFFF !important;
+    [data-testid="stSidebar"] * {
+        color: #ffffff !important; /* Menüdeki her şey beyaz olsun */
     }
     
-    /* MENÜ AÇMA/KAPAMA BUTONU (SOL ÜSTTEKİ OK) */
+    /* MENÜ KAPATMA OKU (Düzeltildi) */
     [data-testid="stSidebarCollapsedControl"] {
-        color: #004D40 !important; /* Ok rengi yeşil olsun ki beyaz zeminde görünsün */
-        background-color: #FFFFFF;
-        border-radius: 5px;
+        color: #004D40 !important;
+        background-color: white;
+        border-radius: 50%;
         border: 1px solid #004D40;
-        display: block !important; /* Gizlenmesini engelle */
+        top: 1rem;
+        left: 1rem;
+        z-index: 99999;
     }
-
-    /* 3. KARTLAR VE METRİKLER (Okunurluk Ayarı) */
+    
+    /* 3. KARTLAR VE METRİKLER (Gölgeli ve Modern) */
     div[data-testid="stMetric"], .stMetric {
-        background-color: #F8F9F9 !important; /* Hafif Gri Zemin */
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #D6DBDF;
-        border-left: 5px solid #E67E22; /* Turuncu Çizgi */
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: #ffffff !important;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid #e9ecef;
+        border-left: 6px solid #E67E22; /* Turuncu vurgu */
+        transition: transform 0.2s;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
     }
     
-    /* Kart içindeki yazı renklerini siyaha zorla (Dark mode bozulmasın diye) */
-    div[data-testid="stMetricLabel"] p { color: #555555 !important; }
-    div[data-testid="stMetricValue"] div { color: #000000 !important; }
+    /* Metrik Yazı Renklerini Zorla (Dark Mode override) */
+    div[data-testid="stMetricLabel"] p { color: #6c757d !important; font-size: 0.9rem !important; font-weight: 600 !important; }
+    div[data-testid="stMetricValue"] div { color: #212529 !important; font-weight: 700 !important; }
 
-    /* 4. TABLOLAR VE DATA FRAME */
+    /* 4. TABLOLAR (Temiz Görünüm) */
     [data-testid="stDataFrame"] {
-        background-color: #FFFFFF;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        overflow: hidden;
+        background-color: white;
     }
     
-    /* 5. GİRİŞ KUTULARI (Input Fields) */
+    /* 5. INPUT ALANLARI VE FORMLAR */
     .stTextInput input, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
-        color: #000000 !important;
-        background-color: #FFFFFF !important;
-        border: 1px solid #ccc;
+        background-color: #ffffff !important;
+        color: #212529 !important;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
     }
-
-    /* MAVİ FİŞ KUTUSU */
-    .fiş-kutusu {
-        background-color: #E3F2FD; padding: 20px; border-radius: 12px; 
-        border: 2px solid #1565C0; text-align: center; margin: 20px 0;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .fiş-baslik { color: #1565C0 !important; font-weight: bold; font-size: 1.2em; }
-    .fiş-tutar { color: #0D47A1 !important; font-weight: 800; font-size: 2.5em; margin: 10px 0; }
-    .fiş-detay { color: #455A64 !important; font-size: 1em; font-family: monospace; font-weight: bold;}
-
-    /* BUTONLAR */
-    .stButton>button {
-        background-color: #E67E22; color: white !important;
-        border: none; font-weight: bold; height: 3.5em; border-radius: 8px; width: 100%;
-        transition: 0.3s;
-    }
-    .stButton>button:hover { background-color: #D35400; transform: scale(1.01); }
     
-    /* İstenmeyen elementleri gizle ama menü butonunu elleme */
-    #MainMenu {visibility: hidden;} 
-    footer {visibility: hidden;}
+    /* 6. BUTONLAR (Canlı Turuncu) */
+    .stButton > button {
+        background: linear-gradient(45deg, #E67E22, #D35400);
+        color: white !important;
+        border: none;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    .stButton > button:hover {
+        box-shadow: 0 4px 8px rgba(230, 126, 34, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 7. ÖZEL FİŞ KUTUSU */
+    .fiş-kutusu {
+        background-color: #e3f2fd;
+        padding: 25px;
+        border-radius: 15px;
+        border: 2px dashed #1565C0;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .fiş-baslik { color: #1565C0; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
+    .fiş-tutar { color: #0d47a1; font-weight: 900; font-size: 2.8rem; margin: 10px 0; font-family: 'Arial', sans-serif; }
+    .fiş-detay { color: #546e7a; font-size: 0.95rem; font-family: monospace; }
+
+    /* Gereksiz header'ı gizle ama menü butonuna dokunma */
+    header[data-testid="stHeader"] { background: transparent; }
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
     
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 2. VERİTABANI
+# 2. VERİTABANI BAĞLANTISI
 # =========================================================
 DB_FILE = 'Uzman_Dat.db'
 
@@ -148,24 +168,44 @@ init_db()
 # =========================================================
 # 3. YARDIMCI FONKSİYONLAR
 # =========================================================
+def show_logo():
+    """Logo varsa gösterir, yoksa online bir ikon gösterir."""
+    # GitHub'da dosya adı 'Uzman.png' ise (büyük küçük harf duyarlı) çalışır.
+    if os.path.exists("Uzman.png"):
+        return st.image("Uzman.png", width=180)
+    elif os.path.exists("uzman.png"):
+        return st.image("uzman.png", width=180)
+    else:
+        # Logo yoksa şık bir Renault/Oto ikonu
+        st.markdown("""
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 60px;">🚘</div>
+                <h3 style="color: white; margin:0;">UZMAN<br>OTOMOTİV</h3>
+            </div>
+        """, unsafe_allow_html=True)
+
 def check_password():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
 
     if not st.session_state["logged_in"]:
-        col1, col2, col3 = st.columns([1,2,1])
-        with col2:
+        c1, c2, c3 = st.columns([1,2,1])
+        with c2:
             st.markdown("<br><br>", unsafe_allow_html=True)
+            # Login ekranı logosu
             if os.path.exists("Uzman.png"):
                 st.image("Uzman.png", width=200)
             else:
-                st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Renault_2009_logo.svg/1200px-Renault_2009_logo.svg.png", width=200)
+                st.markdown("<h1 style='text-align: center;'>🚘</h1>", unsafe_allow_html=True)
                 
-            st.markdown("<h2 style='text-align: center; color: black;'>GÜVENLİ GİRİŞ</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: #333;'>YÖNETİM PANELİ GİRİŞ</h2>", unsafe_allow_html=True)
+            
             with st.form("login_form"):
                 user = st.text_input("Kullanıcı Adı")
                 pw = st.text_input("Şifre", type="password")
-                if st.form_submit_button("GİRİŞ YAP"):
+                btn = st.form_submit_button("GÜVENLİ GİRİŞ")
+                
+                if btn:
                     with get_connection() as conn:
                         cur = conn.cursor()
                         cur.execute("SELECT * FROM admin WHERE kullanici=? AND sifre=?", (user, pw))
@@ -174,7 +214,7 @@ def check_password():
                             st.success("Giriş Başarılı!")
                             time.sleep(0.5)
                             st.rerun()
-                        else: st.error("Hatalı Giriş!")
+                        else: st.error("Hatalı kullanıcı adı veya şifre!")
         return False
     return True
 
@@ -280,19 +320,18 @@ def indirme_butonlari(df, isim):
 # 4. GİRİŞ KONTROLÜ VE MENÜ
 # =========================================================
 if check_password():
-    if os.path.exists("Uzman.png"):
-        st.sidebar.image("Uzman.png", use_container_width=True)
-    else:
-        st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Renault_2009_logo.svg/1200px-Renault_2009_logo.svg.png", width=150)
-
-    st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli")
-    
-    if st.sidebar.button("🚪 ÇIKIŞ YAP"):
-        st.session_state["logged_in"] = False
-        st.rerun()
+    # LOGO GÖSTERİMİ (Sidebar)
+    with st.sidebar:
+        show_logo()
+        st.title("YEDEK PARÇA") 
+        st.caption("Yönetim Paneli v2.0")
+        st.markdown("---")
 
     menu = st.sidebar.radio("MENÜ", ["📊 Dashboard", "📦 Stok Yönetimi", "📝 Hareket Girişi", "📈 Raporlar & Analiz", "⚙️ Ayarlar"])
+    
+    if st.sidebar.button("🚪 GÜVENLİ ÇIKIŞ"):
+        st.session_state["logged_in"] = False
+        st.rerun()
 
     conn = get_connection()
     df_stok = pd.read_sql("SELECT * FROM stoklar", conn)
@@ -302,166 +341,174 @@ if check_password():
 
     # --- 1. DASHBOARD ---
     if menu == "📊 Dashboard":
-        st.markdown("<h1 style='color:black;'>🚀 Ana Kontrol Paneli</h1>", unsafe_allow_html=True)
+        st.header("🚀 Ana Kontrol Paneli")
         st.markdown("---")
         
         if not df_stok.empty:
             stok_maliyet_net = (df_stok['MevcutStok'] * df_stok['PacalMaliyet']).sum()
+            # Net satış fiyatı sütunu yoksa brütten hesapla
             if 'SatisFiyatiNet' in df_stok.columns:
                 satis_degeri_net = (df_stok['MevcutStok'] * df_stok['SatisFiyatiNet']).sum()
             else:
                 satis_degeri_net = (df_stok['MevcutStok'] * df_stok['SatisFiyati']).sum() / 1.20 
             
             tahmini_kar = satis_degeri_net - stok_maliyet_net
+            kritik = len(df_stok[df_stok['MevcutStok'] <= df_stok['KritikLimit']])
             
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("💰 Stok Maliyeti (NET)", f"{stok_maliyet_net:,.0f} TL", "Paçal Maliyet")
-            c2.metric("💵 Satış Değeri (NET)", f"{satis_degeri_net:,.0f} TL", "KDV Hariç Fiyat")
-            c3.metric("📈 Tahmini Brüt Kâr", f"{tahmini_kar:,.0f} TL", "Potansiyel Kazanç")
+            c2.metric("💵 Satış Değeri (NET)", f"{satis_degeri_net:,.0f} TL", "KDV Hariç")
+            c3.metric("📈 Tahmini Brüt Kâr", f"{tahmini_kar:,.0f} TL", "Potansiyel")
+            c4.metric("⚠️ Kritik Stok", kritik, "Acil Sipariş", delta_color="inverse")
             
-            kritik = len(df_stok[df_stok['MevcutStok'] <= df_stok['KritikLimit']])
-            c4.metric("⚠️ Kritik Stok", kritik, delta_color="inverse")
+            st.markdown("<br>", unsafe_allow_html=True)
             
-            st.markdown("---")
             g1, g2 = st.columns(2)
             with g1:
                 st.subheader("🔥 En Çok Satan 10 Ürün")
                 if not df_har.empty:
                     top = df_har[df_har['IslemTipi'].str.contains('Çıkış')].groupby('UrunAdi')['Miktar'].sum().nlargest(10).reset_index()
                     st.plotly_chart(px.bar(top, x='UrunAdi', y='Miktar', color='Miktar', color_continuous_scale='Oranges'), use_container_width=True)
-                else: st.info("Veri yok.")
+                else: st.info("Henüz satış verisi yok.")
             
             with g2:
-                st.subheader("📍 Depo Koridor Yoğunluğu")
-                df_stok['Koridor'] = df_stok['RafYeri'].str.split('-').str[0]
-                raf = df_stok[df_stok['Koridor'].str.isnumeric()].groupby('Koridor').size().reset_index(name='Adet')
-                st.plotly_chart(px.pie(raf, values='Adet', names='Koridor', hole=0.4), use_container_width=True)
+                st.subheader("📍 Depo Doluluk Oranı")
+                if 'RafYeri' in df_stok.columns:
+                    df_stok['Koridor'] = df_stok['RafYeri'].astype(str).str.split('-').str[0]
+                    raf = df_stok[df_stok['Koridor'].str.isnumeric()].groupby('Koridor').size().reset_index(name='Adet')
+                    if not raf.empty:
+                        st.plotly_chart(px.pie(raf, values='Adet', names='Koridor', hole=0.4), use_container_width=True)
+                    else: st.info("Raf verisi düzenlenmemiş.")
+                else: st.info("Raf sistemi aktif değil.")
                 
-            st.subheader("📊 Marka/Model Dağılımı")
-            mod = df_stok['ModelUyumluluk'].value_counts().head(15).reset_index()
-            mod.columns = ['Model','Adet']
-            st.plotly_chart(px.bar(mod, x='Model', y='Adet', color='Adet', color_continuous_scale='Greens'), use_container_width=True)
-        else: st.warning("Veritabanı boş! Lütfen 'Ayarlar' menüsünden Excel dosyanızı yükleyiniz.")
+        else: st.warning("Veritabanı boş! 'Ayarlar' menüsünden Excel dosyanızı yükleyiniz.")
 
     # --- 2. STOK YÖNETİMİ ---
     elif menu == "📦 Stok Yönetimi":
-        st.markdown("<h1 style='color:black;'>📦 Stok Kartları</h1>", unsafe_allow_html=True)
+        st.header("📦 Stok Yönetimi")
         
-        tab_list, tab_ekle = st.tabs(["📋 Stok Listesi", "➕ Tekil Ürün Ekle/Düzenle"])
+        tab_list, tab_ekle = st.tabs(["📋 Stok Listesi", "➕ Ürün Ekle / Düzenle"])
         
         with tab_list:
-            with st.expander("🔍 Arama ve Filtreleme", expanded=True):
+            with st.expander("🔍 Detaylı Arama", expanded=True):
                 c1, c2 = st.columns([3,1])
-                search = c1.text_input("Hızlı Ara", placeholder="Barkod, İsim, Raf...")
-                seg = c2.multiselect("Segment", df_stok['Segment'].unique())
+                search = c1.text_input("Arama Yap", placeholder="Parça adı, kod veya raf yeri yazın...")
+                seg = c2.multiselect("Segment Filtresi", df_stok['Segment'].unique())
             
             view = df_stok.copy()
-            if search: view = view[view.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
-            if seg: view = view[view['Segment'].isin(seg)]
+            if search:
+                view = view[view.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
+            if seg:
+                view = view[view['Segment'].isin(seg)]
             
-            view['Durum'] = view.apply(lambda x: "⚠️ KRİTİK" if x['MevcutStok'] <= x['KritikLimit'] else "✅ OK", axis=1)
+            view['Durum'] = view.apply(lambda x: "🔴 KRİTİK" if x['MevcutStok'] <= x['KritikLimit'] else "🟢 YETERLİ", axis=1)
             
-            st.dataframe(view[['StokKodu','UrunAdi','RafYeri','MevcutStok','Durum','SatisFiyatiNet','SatisFiyati']], 
-                        use_container_width=True, height=600,
+            st.dataframe(view[['StokKodu','UrunAdi','RafYeri','MevcutStok','Durum','SatisFiyati']], 
+                        use_container_width=True, height=500,
                         column_config={
-                            "SatisFiyatiNet": st.column_config.NumberColumn("Satış (Net)", format="%.2f TL"),
-                            "SatisFiyati": st.column_config.NumberColumn("Satış (Brüt)", format="%.2f TL"),
-                            "MevcutStok": st.column_config.ProgressColumn("Mevcut", min_value=0, max_value=100, format="%.f"),
-                            "Durum": st.column_config.TextColumn("Durum", width="small")
+                            "SatisFiyati": st.column_config.NumberColumn("Fiyat", format="%.2f TL"),
+                            "MevcutStok": st.column_config.ProgressColumn("Stok", min_value=0, max_value=100, format="%.f"),
                         })
 
         with tab_ekle:
-            st.info("Buradan tek bir ürünü sisteme ekleyebilir veya var olanı güncelleyebilirsiniz.")
-            with st.form("manual_stok"):
+            st.info("Var olan bir stok kodunu girerseniz ürün GÜNCELLENİR, yeni kod girerseniz EKLENİR.")
+            with st.form("stok_form"):
                 c1, c2 = st.columns(2)
-                kod = c1.text_input("Stok Kodu (Barkod)", placeholder="Örn: 123456")
-                ad = c2.text_input("Ürün Adı")
+                kod = c1.text_input("Stok Kodu / Barkod", placeholder="Örn: 8200...")
+                ad = c2.text_input("Parça Adı")
                 
                 c3, c4, c5 = st.columns(3)
-                raf = c3.text_input("Raf Yeri", placeholder="1-1-1-1")
+                raf = c3.text_input("Raf Yeri", placeholder="Koridor-Sıra...")
                 fiyat = c4.number_input("Satış Fiyatı (KDV Dahil)", min_value=0.0)
                 stok = c5.number_input("Stok Adedi", min_value=0)
                 
-                submit = st.form_submit_button("💾 KAYDET / GÜNCELLE")
-                if submit and kod and ad:
-                    with get_connection() as conn:
-                        try:
+                if st.form_submit_button("💾 KAYDET"):
+                    if kod and ad:
+                        with get_connection() as conn:
                             net_fiyat = fiyat / 1.20
-                            conn.execute("""
-                                INSERT INTO stoklar (StokKodu, UrunAdi, RafYeri, SatisFiyati, SatisFiyatiNet, MevcutStok, PacalMaliyet, KritikLimit, SonGuncelleme)
-                                VALUES (?, ?, ?, ?, ?, ?, 0, 5, ?)
-                                ON CONFLICT(StokKodu) DO UPDATE SET
-                                UrunAdi=excluded.UrunAdi, RafYeri=excluded.RafYeri, SatisFiyati=excluded.SatisFiyati, 
-                                SatisFiyatiNet=excluded.SatisFiyatiNet, MevcutStok=excluded.MevcutStok, SonGuncelleme=excluded.SonGuncelleme
-                            """, (kod, ad, raf, fiyat, net_fiyat, stok, datetime.now()))
-                            conn.commit()
-                            st.success(f"{ad} başarıyla kaydedildi!")
-                            time.sleep(1)
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Hata: {e}")
+                            try:
+                                conn.execute("""
+                                    INSERT INTO stoklar (StokKodu, UrunAdi, RafYeri, SatisFiyati, SatisFiyatiNet, MevcutStok, PacalMaliyet, KritikLimit, SonGuncelleme)
+                                    VALUES (?, ?, ?, ?, ?, ?, 0, 5, ?)
+                                    ON CONFLICT(StokKodu) DO UPDATE SET
+                                    UrunAdi=excluded.UrunAdi, RafYeri=excluded.RafYeri, SatisFiyati=excluded.SatisFiyati, 
+                                    SatisFiyatiNet=excluded.SatisFiyatiNet, MevcutStok=excluded.MevcutStok, SonGuncelleme=excluded.SonGuncelleme
+                                """, (kod, ad, raf, fiyat, net_fiyat, stok, datetime.now()))
+                                conn.commit()
+                                st.success(f"✅ {ad} başarıyla kaydedildi.")
+                                time.sleep(1)
+                                st.rerun()
+                            except Exception as e: st.error(f"Hata: {e}")
+                    else: st.warning("Kod ve Ürün Adı zorunludur.")
 
     # --- 3. HAREKET GİRİŞİ ---
     elif menu == "📝 Hareket Girişi":
-        st.markdown("<h1 style='color:black;'>⚡ Satış Ekranı</h1>", unsafe_allow_html=True)
-        c_l, c_r = st.columns([1, 2])
-        with c_l:
-            st.info("İşlem Bilgileri")
-            islem = st.selectbox("Tip", ["Stok Çıkış (Satış)", "Stok Giriş (İade)"])
-            p_list = df_tanim['Personel'].dropna().unique().tolist()
-            personel = st.selectbox("Personel", p_list if p_list else ["Tanımsız"])
-            cari = st.selectbox("Cari", df_tanim['Cari'].dropna().unique().tolist() or ["Genel"])
-            evrak = st.text_input("Evrak No")
+        st.header("⚡ Hızlı Satış / Giriş Ekranı")
         
-        with c_r:
-            st.warning("Ürün & Hesap")
-            urun = st.selectbox("Ürün Seç", df_stok['UrunAdi'].unique())
+        col_sol, col_sag = st.columns([1, 2])
+        
+        with col_sol:
+            st.markdown("### 📄 İşlem Detayı")
+            islem = st.selectbox("İşlem Tipi", ["Stok Çıkış (Satış)", "Stok Giriş (İade/Alım)"])
+            evrak = st.text_input("Evrak / Fiş No")
+            cari = st.selectbox("Cari Hesap", df_tanim['Cari'].dropna().unique().tolist() or ["Peşin"])
+            personel = st.selectbox("Personel", df_tanim['Personel'].dropna().unique().tolist() or ["Genel"])
+        
+        with col_sag:
+            st.markdown("### 🛒 Ürün ve Tutar")
+            urun = st.selectbox("Ürün Arama", df_stok['UrunAdi'].unique())
+            
             if urun:
                 rec = df_stok[df_stok['UrunAdi']==urun].iloc[0]
-                st.caption(f"Raf: {rec['RafYeri']} | Stok: {rec['MevcutStok']} | Liste Fiyatı: {rec['SatisFiyati']} TL")
-                st.divider()
+                st.info(f"📍 Raf: **{rec['RafYeri']}** | 📦 Mevcut: **{rec['MevcutStok']}** | 🏷️ Liste Fiyatı: **{rec['SatisFiyati']} TL**")
                 
-                k1, k2, k3 = st.columns(3)
-                miktar = k1.number_input("Adet", 1, 1000, 1)
-                fiyat = k2.number_input("Birim Fiyat", value=float(rec['SatisFiyati']))
-                kdv_tip = k3.radio("KDV", ["Dahil", "Hariç"], horizontal=True)
-                kdv_oran = st.selectbox("Oran", [0,1,8,10,18,20], index=5)
+                r1, r2, r3 = st.columns(3)
+                miktar = r1.number_input("Adet", 1, 1000, 1)
+                fiyat = r2.number_input("Birim Fiyat", value=float(rec['SatisFiyati']))
+                kdv_orani = r3.selectbox("KDV", [0, 1, 10, 20], index=3)
                 
-                ham = miktar * fiyat
-                if kdv_tip == "Dahil":
-                    toplam = ham
-                    matrah = toplam / (1 + kdv_oran/100)
-                    kdv = toplam - matrah
-                else:
-                    matrah = ham
-                    kdv = matrah * (kdv_oran/100)
-                    toplam = matrah + kdv
+                # Hesaplama
+                tutar = miktar * fiyat
+                kdv_tutari = tutar * (kdv_orani / 100) if islem == "Stok Çıkış (Satış)" else 0 # Basit hesap
+                # Burada KDV dahil/hariç karmaşası olmasın diye basit mantık: Fiyat KDV dahil kabul edildi.
+                genel_toplam = tutar 
+                net_tutar = genel_toplam / (1 + kdv_orani/100)
+                kdv_tutari = genel_toplam - net_tutar
                 
-                st.markdown(f"""<div class="fiş-kutusu"><div class="fiş-baslik">TOPLAM TUTAR</div><div class="fiş-tutar">{toplam:,.2f} TL</div><div class="fiş-detay">Net: {matrah:,.2f} TL | KDV: {kdv:,.2f} TL</div></div>""", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class="fiş-kutusu">
+                    <div class="fiş-baslik">TOPLAM TUTAR</div>
+                    <div class="fiş-tutar">{genel_toplam:,.2f} TL</div>
+                    <div class="fiş-detay">Net: {net_tutar:,.2f} TL | KDV: {kdv_tutari:,.2f} TL</div>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                if st.button("✅ KAYDET"):
+                if st.button("✅ İŞLEMİ ONAYLA", use_container_width=True):
                     with get_connection() as conn:
+                        # Hareketi kaydet
                         conn.execute("INSERT INTO hareketler (Tarih, EvrakNo, IslemTipi, UrunAdi, Cari, Personel, Miktar, BirimFiyat, KDVOrani, KDVTutari, GenelToplam, IslemZamani) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                                     (datetime.now(), evrak, islem, urun, cari, personel, miktar, fiyat, kdv_oran, kdv, toplam, datetime.now()))
-                        mevcut = int(rec['MevcutStok'])
-                        yeni = mevcut - miktar if "Çıkış" in islem else mevcut + miktar
-                        conn.execute("UPDATE stoklar SET MevcutStok=? WHERE StokKodu=?", (yeni, rec['StokKodu']))
+                                     (datetime.now(), evrak, islem, urun, cari, personel, miktar, fiyat, kdv_orani, kdv_tutari, genel_toplam, datetime.now()))
+                        
+                        # Stoğu düş/arttır
+                        yeni_stok = int(rec['MevcutStok']) - miktar if "Çıkış" in islem else int(rec['MevcutStok']) + miktar
+                        conn.execute("UPDATE stoklar SET MevcutStok=? WHERE StokKodu=?", (yeni_stok, rec['StokKodu']))
                         conn.commit()
-                    st.success("İşlem Tamam!"); time.sleep(1); st.rerun()
+                        
+                    st.success("İşlem başarıyla kaydedildi!")
+                    time.sleep(1)
+                    st.rerun()
 
     # --- 4. RAPORLAR ---
     elif menu == "📈 Raporlar & Analiz":
-        st.markdown("<h1 style='color:black;'>📈 Rapor Merkezi</h1>", unsafe_allow_html=True)
-        t1, t2, t3, t4, t5 = st.tabs(["📦 Stok Envanter Raporu", "📊 ABC Analizi", "💰 Kârlılık", "🕸️ Ölü Stoklar", "Hareket Listeleme"])
+        st.header("📈 Rapor Merkezi")
+        t1, t2, t3, t4, t5 = st.tabs(["📦 Envanter", "📊 ABC Analizi", "💰 Kârlılık", "🕸️ Ölü Stok", "📝 Hareket Geçmişi"])
         
         with t1:
-            st.subheader("📋 Detaylı Stok Envanter Dökümü")
-            st.write("Depodaki tüm ürünlerin detaylı listesini buradan alabilirsiniz.")
             st.dataframe(df_stok, use_container_width=True)
-            indirme_butonlari(df_stok, "stok_envanteri")
+            indirme_butonlari(df_stok, "stok_envanter")
 
         with t2:
-            st.subheader("🅰️🅱️©️ Pareto (ABC) Analizi")
+            st.subheader("Pareto (ABC) Analizi")
             if not df_har.empty:
                 abc = df_har[df_har['IslemTipi'].str.contains('Çıkış')].groupby('UrunAdi')['GenelToplam'].sum().reset_index().sort_values(by='GenelToplam', ascending=False)
                 abc['Kumulatif'] = abc['GenelToplam'].cumsum()
@@ -469,107 +516,103 @@ if check_password():
                 abc['Sinif'] = abc['Yuzde'].apply(lambda x: 'A' if x<=80 else ('B' if x<=95 else 'C'))
                 st.dataframe(abc, use_container_width=True)
                 indirme_butonlari(abc, "abc_analizi")
-            else: st.info("Satış verisi yok.")
+            else: st.warning("Veri yok.")
             
         with t3:
-            st.subheader("💸 Ürün Bazlı Kârlılık")
             if not df_har.empty:
                 kar = df_har[df_har['IslemTipi'].str.contains('Çıkış')].groupby('UrunAdi').agg({'Miktar':'sum', 'GenelToplam':'sum'}).reset_index()
                 kar = kar.merge(df_stok[['UrunAdi','PacalMaliyet']], on='UrunAdi', how='left')
-                kar['NetKar'] = kar['GenelToplam'] - (kar['Miktar']*kar['PacalMaliyet'])
+                kar['TahminiMaliyet'] = kar['Miktar'] * kar['PacalMaliyet']
+                kar['BrutKar'] = kar['GenelToplam'] - kar['TahminiMaliyet']
                 st.dataframe(kar, use_container_width=True)
                 indirme_butonlari(kar, "karlilik_raporu")
-        
-        with t4:
-            st.subheader("🕸️ Hareket Görmeyen Ürünler")
-            olu = df_stok[~df_stok['UrunAdi'].isin(df_har[df_har['IslemTipi'].str.contains('Çıkış')]['UrunAdi'])]
-            st.dataframe(olu, use_container_width=True)
-            indirme_butonlari(olu, "olu_stok")
+            else: st.warning("Veri yok.")
             
+        with t4:
+            st.subheader("Hareketsiz Ürünler")
+            if not df_har.empty:
+                satilanlar = df_har['UrunAdi'].unique()
+                olu = df_stok[~df_stok['UrunAdi'].isin(satilanlar)]
+                st.dataframe(olu, use_container_width=True)
+            else: st.info("Henüz hareket yok.")
+
         with t5:
-            st.subheader("📋 Hareketler Listesi")
+            st.subheader("Son İşlemler")
             df_log = df_har.sort_values('id', ascending=False)
             st.dataframe(df_log, use_container_width=True)
             indirme_butonlari(df_log, "hareket_dokumu")
             
             st.markdown("---")
-            st.error("🔴 **KAYIT SİLME ALANI**")
-            c_d1, c_d2 = st.columns([3,1])
-            sil_id = c_d1.selectbox("Silinecek İşlem ID Seçiniz", df_log['id'].tolist() if not df_log.empty else [])
-            if c_d2.button("❌ SİL"):
-                with get_connection() as conn:
-                    r = df_har[df_har['id']==sil_id].iloc[0]
-                    cur = df_stok[df_stok['UrunAdi']==r['UrunAdi']]['MevcutStok'].iloc[0]
-                    rev = cur + r['Miktar'] if "Çıkış" in r['IslemTipi'] else cur - r['Miktar']
-                    conn.execute("UPDATE stoklar SET MevcutStok=? WHERE UrunAdi=?", (rev, r['UrunAdi']))
-                    conn.execute("DELETE FROM hareketler WHERE id=?", (sil_id,))
-                    conn.commit()
-                st.success("Silindi!"); time.sleep(1); st.rerun()
+            with st.expander("🗑️ Hatalı Kayıt Silme"):
+                sid = st.selectbox("Silinecek Kayıt ID", df_log['id'].tolist())
+                if st.button("❌ Kaydı Sil ve Stoğu Geri Al"):
+                    with get_connection() as conn:
+                        r = df_har[df_har['id']==sid].iloc[0]
+                        # Stoğu tersine çevir
+                        curr = df_stok[df_stok['UrunAdi']==r['UrunAdi']]['MevcutStok'].iloc[0]
+                        new_stk = curr + r['Miktar'] if "Çıkış" in r['IslemTipi'] else curr - r['Miktar']
+                        conn.execute("UPDATE stoklar SET MevcutStok=? WHERE UrunAdi=?", (new_stk, r['UrunAdi']))
+                        conn.execute("DELETE FROM hareketler WHERE id=?", (sid,))
+                        conn.commit()
+                    st.success("Kayıt silindi, stok düzeltildi.")
+                    time.sleep(1)
+                    st.rerun()
 
     # --- 5. AYARLAR ---
     elif menu == "⚙️ Ayarlar":
-        st.markdown("<h1 style='color:black;'>⚙️ Sistem Ayarları</h1>", unsafe_allow_html=True)
-        t1, t2, t3, t4 = st.tabs(["📥 Excel Stok Yükle", "📝 Sistem Tanımları", "🔐 Şifre Değiştir", "💾 Veritabanı Yedekle"])
+        st.header("⚙️ Sistem Ayarları")
+        t1, t2, t3, t4 = st.tabs(["📥 Stok Yükle", "📝 Tanımlamalar", "🔐 Güvenlik", "💾 Yedekleme"])
         
         with t1:
-            st.info("Tedarikçiden gelen 'stok1.xlsx' dosyasını buradan yükleyin.")
-            up = st.file_uploader("Dosya Seç", type=['xlsx','csv'])
-            if up and st.button("🚀 Dosyayı Sisteme İşle", type="primary"):
+            st.info("Excel formatı: Parça Kodu | Parça Adı | Stok | Fiyat sütunlarını içermelidir.")
+            up = st.file_uploader("Excel Dosyası Seç", type=['xlsx','csv'])
+            if up and st.button("Yüklemeyi Başlat"):
                 ok, msg = process_excel_import(up)
-                if ok: st.success(msg); time.sleep(2); st.rerun()
+                if ok: st.success(msg)
                 else: st.error(msg)
-                
+        
         with t2:
-            st.warning("Listeleri düzenledikten sonra en alttaki 'KAYDET' butonuna basmayı unutmayın.")
-            c1, c2, c3 = st.columns(3)
-            e_pers = c1.data_editor(df_tanim[['Personel']].dropna(), num_rows="dynamic", key='e1', use_container_width=True)
-            e_cari = c2.data_editor(df_tanim[['Cari']].dropna(), num_rows="dynamic", key='e2', use_container_width=True)
-            e_kat = c3.data_editor(df_tanim[['Kategori']].dropna(), num_rows="dynamic", key='e3', use_container_width=True)
+            c1, c2 = st.columns(2)
+            with c1:
+                st.subheader("Personel Listesi")
+                new_p = st.data_editor(df_tanim[['Personel']].dropna(), num_rows="dynamic", key="k1")
+            with c2:
+                st.subheader("Cari Hesaplar")
+                new_c = st.data_editor(df_tanim[['Cari']].dropna(), num_rows="dynamic", key="k2")
             
-            if st.button("💾 TÜM TANIMLARI KAYDET", type="primary"):
-                l1, l2, l3 = e_pers['Personel'].tolist(), e_cari['Cari'].tolist(), e_kat['Kategori'].tolist()
-                mx = max(len(l1), len(l2), len(l3))
-                data = {
-                    'Personel': l1 + [None]*(mx-len(l1)),
-                    'Cari': l2 + [None]*(mx-len(l2)),
-                    'Kategori': l3 + [None]*(mx-len(l3)),
-                    'Birim': [None]*mx, 'KDV': [None]*mx
-                }
+            if st.button("Tanımları Kaydet"):
+                # Basitçe tüm tanımları silip yeniden ekleme mantığı (pratik çözüm)
+                l_p = new_p['Personel'].dropna().tolist()
+                l_c = new_c['Cari'].dropna().tolist()
+                max_len = max(len(l_p), len(l_c))
+                # Listeleri eşitle
+                l_p += [None] * (max_len - len(l_p))
+                l_c += [None] * (max_len - len(l_c))
+                
+                df_new = pd.DataFrame({'Personel': l_p, 'Cari': l_c, 'Kategori': [None]*max_len, 'Birim': [None]*max_len, 'KDV': [None]*max_len})
                 with get_connection() as conn:
-                    pd.DataFrame(data).to_sql('tanimlar', conn, if_exists='replace', index=False)
-                st.success("✅ Tanımlar başarıyla güncellendi!"); time.sleep(1); st.rerun()
+                    df_new.to_sql('tanimlar', conn, if_exists='replace', index=False)
+                st.success("Tanımlar güncellendi.")
 
         with t3:
-            st.subheader("🔐 Admin Şifresi Değiştir")
-            with st.form("pass_change"):
-                old_pass = st.text_input("Eski Şifre", type="password")
-                new_pass = st.text_input("Yeni Şifre", type="password")
-                confirm_pass = st.text_input("Yeni Şifre (Tekrar)", type="password")
-                btn_pass = st.form_submit_button("Şifreyi Güncelle")
-                
-                if btn_pass:
+            with st.form("pwd"):
+                p1 = st.text_input("Eski Şifre", type="password")
+                p2 = st.text_input("Yeni Şifre", type="password")
+                if st.form_submit_button("Şifreyi Değiştir"):
                     with get_connection() as conn:
                         cur = conn.cursor()
-                        cur.execute("SELECT * FROM admin WHERE kullanici='admin' AND sifre=?", (old_pass,))
+                        cur.execute("SELECT * FROM admin WHERE kullanici='admin' AND sifre=?", (p1,))
                         if cur.fetchone():
-                            if new_pass == confirm_pass and new_pass != "":
-                                cur.execute("UPDATE admin SET sifre=? WHERE kullanici='admin'", (new_pass,))
-                                conn.commit()
-                                st.success("Şifre başarıyla değiştirildi! Lütfen tekrar giriş yapın.")
-                                time.sleep(2)
-                                st.session_state["logged_in"] = False
-                                st.rerun()
-                            else: st.error("Yeni şifreler uyuşmuyor veya boş!")
-                        else: st.error("Eski şifre yanlış!")
+                            cur.execute("UPDATE admin SET sifre=? WHERE kullanici='admin'", (p2,))
+                            conn.commit()
+                            st.success("Şifre değişti, lütfen tekrar giriş yapın.")
+                            st.session_state["logged_in"] = False
+                            time.sleep(2)
+                            st.rerun()
+                        else: st.error("Eski şifre hatalı.")
 
         with t4:
-            st.subheader("Veri Güvenliği")
-            st.write("Veritabanının bir kopyasını bilgisayarınıza indirin.")
+            st.write("Veritabanı yedeğini indirip bilgisayarınızda saklayabilirsiniz.")
             data = backup_db()
             if data:
-                st.download_button(
-                    label="💾 Yedeği İndir (Backup)",
-                    data=data,
-                    file_name=f"uzman_oto_yedek_{datetime.now().strftime('%Y%m%d')}.db",
-                    mime="application/octet-stream"
-                )
+                st.download_button("💾 Yedeği İndir", data, file_name=f"Yedek_{datetime.now().date()}.db")
