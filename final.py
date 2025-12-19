@@ -19,30 +19,25 @@ st.set_page_config(
 )
 
 # =========================================================
-# 2. CSS SİHİRLERİ (V5.0 - CERRAHİ MÜDAHALE)
+# 2. CSS SİHİRLERİ (V5.1 - SABİT MENÜ & TEMİZ GÖRÜNÜM)
 # =========================================================
 st.markdown("""
 <style>
     /* --- 1. MASAÜSTÜ (PC) İÇİN ÖZEL KURALLAR --- */
     @media (min-width: 992px) {
-        /* DİKKAT: Sadece Sidebar'ın Header'ındaki kapatma (X) butonunu gizle */
-        /* Çıkış butonu 'stSidebarUserContent' içinde olduğu için etkilenmez */
+        /* Yan menüyü kapatan (<<) butonu YOK ET */
         [data-testid="stSidebar"] [data-testid="stSidebarHeader"] button {
             display: none !important;
         }
-        
-        /* Menü kapalıyken çıkan (>) butonunu gizle */
         [data-testid="stSidebarCollapsedControl"] {
             display: none !important;
         }
-        
-        /* Header'ı (Üst şerit) masaüstünde gizle */
+        /* Header'ı gizle */
         [data-testid="stHeader"] {
             background-color: transparent !important;
             height: 0px !important;
             pointer-events: none;
         }
-        
         .block-container { padding-top: 2rem !important; }
     }
 
@@ -55,7 +50,6 @@ st.markdown("""
             z-index: 99999 !important;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        
         [data-testid="stSidebarCollapsedControl"] {
             display: flex !important;
             color: #FFFFFF !important;
@@ -66,7 +60,7 @@ st.markdown("""
         }
     }
 
-    /* --- 3. REKLAM, BADGE VE GEREKSİZLERİ GİZLEME --- */
+    /* --- 3. GEREKSİZLERİ GİZLEME --- */
     [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stDecoration"] { display: none !important; }
     [data-testid="stStatusWidget"] { display: none !important; }
@@ -101,14 +95,12 @@ st.markdown("""
     div[data-testid="stMetricLabel"] p { color: #555 !important; font-weight: bold; }
     div[data-testid="stMetricValue"] div { color: #000 !important; }
 
-    /* Butonlar */
     .stButton > button {
         background-color: #E67E22 !important; color: white !important;
         border: none; border-radius: 8px; font-weight: bold;
     }
     .stButton > button:hover { background-color: #D35400 !important; }
     
-    /* İkincil Butonlar (İptal vb.) için Gri Stil */
     button[kind="secondary"] {
         background-color: #7f8c8d !important;
         color: white !important;
@@ -127,12 +119,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. VERİTABANI VE FONKSİYONLAR
+# 3. VERİTABANI BAĞLANTISI
 # =========================================================
 DB_FILE = 'Uzman_Dat.db'
 
 def get_connection():
-    # Isolation_level=None oto-commit modunu açar (SQLite için)
     return sqlite3.connect(DB_FILE, timeout=10, isolation_level=None)
 
 def init_db():
@@ -152,15 +143,12 @@ def init_db():
         cursor.execute('''CREATE TABLE IF NOT EXISTS admin (
             kullanici TEXT PRIMARY KEY, sifre TEXT)''')
         
-        # Varsayılan değerler sadece tablo boşsa eklenir
         cursor.execute("SELECT Count(*) FROM tanimlar")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO tanimlar (Personel, Cari, Kategori) VALUES (?,?,?)", ("Genel Personel", "Peşin Müşteri", "Genel Parça"))
-        
         cursor.execute("SELECT Count(*) FROM admin")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO admin (kullanici, sifre) VALUES (?,?)", ("admin", "1234"))
-        # isolation_level=None olduğu için commit gerekmez ama garanti olsun
         conn.commit()
 
 init_db()
@@ -280,9 +268,7 @@ def check_password():
         st.session_state["logged_in"] = False
 
     if not st.session_state["logged_in"]:
-        # Giriş yapılmadıysa CSS ile Menüyü gizle
         st.markdown("""<style>[data-testid="stSidebar"] {display: none;}</style>""", unsafe_allow_html=True)
-        
         col1, col2, col3 = st.columns([1,2,1])
         with col2:
             st.markdown("<br><br>", unsafe_allow_html=True)
@@ -313,13 +299,9 @@ def check_password():
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v5.0")
+    st.sidebar.caption("Yönetim Paneli") # Versiyon silindi
     
-    # Çıkış Butonu Artık Görünecek (CSS düzeltildi)
-    if st.sidebar.button("🚪 ÇIKIŞ YAP"):
-        st.session_state["logged_in"] = False
-        st.rerun()
-
+    # MENÜ SEÇENEKLERİ (Önce menüyü koyuyoruz)
     menu = st.sidebar.radio("MENÜ", [
         "📊 Dashboard", 
         "📝 Stok Hareket Girişi", 
@@ -328,9 +310,14 @@ if check_password():
         "⚙️ Ayarlar"
     ])
 
+    # ÇIKIŞ BUTONU (En alta, çizgiden sonra)
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🚪 ÇIKIŞ YAP"):
+        st.session_state["logged_in"] = False
+        st.rerun()
+
     conn = get_connection()
     df_stok = pd.read_sql("SELECT * FROM stoklar", conn)
-    # Veri Tipi Düzeltme (Hata Önleyici)
     for col in ['MevcutStok', 'PacalMaliyet', 'SatisFiyati', 'SatisFiyatiNet', 'KritikLimit', 'SonAlisFiyati']:
         if col in df_stok.columns:
             df_stok[col] = pd.to_numeric(df_stok[col], errors='coerce').fillna(0)
@@ -461,7 +448,6 @@ if check_password():
                         time.sleep(1.5)
                         st.rerun() 
                 
-                # GERİ / İPTAL BUTONU
                 if col_cancel.button("❌ VAZGEÇ / TEMİZLE", type="secondary", use_container_width=True):
                     st.session_state['sepet'] = []
                     st.warning("Liste temizlendi.")
@@ -543,8 +529,7 @@ if check_password():
                 seg = c9.selectbox("Segment", ["A", "B", "C", "D", "E", "M"], index=["A", "B", "C", "D", "E", "M"].index(def_seg) if def_seg in ["A", "B", "C", "D", "E", "M"] else 2)
                 limit = c10.number_input("Kritik Stok Limiti", min_value=1, value=def_limit)
                 
-                col_save, col_clear = st.columns(2)
-                if col_save.form_submit_button("💾 KAYDET / GÜNCELLE"):
+                if st.form_submit_button("💾 KAYDET / GÜNCELLE"):
                     if kod and ad:
                         with get_connection() as conn:
                             net_satis = satis / 1.20 
@@ -564,9 +549,6 @@ if check_password():
                                 st.rerun()
                             except Exception as e: st.error(f"Hata oluştu: {e}")
                     else: st.warning("Lütfen Stok Kodu ve Ürün Adı alanlarını doldurunuz.")
-                
-                # Form temizlemek için buton (Submit olmadığı için form dışında olmalı, ama form içi kısıtlı)
-                # Streamlit formlarında "iptal" butonu zordur, o yüzden kullanıcı sayfayı yenileyebilir.
 
     # --- 4. RAPORLAR ---
     elif menu == "📈 Raporlar & Analiz":
@@ -622,9 +604,8 @@ if check_password():
     elif menu == "⚙️ Ayarlar":
         st.markdown("## ⚙️ Sistem Ayarları")
         
-        # --- UYARI MESAJI (Kayıp Veri Sorunu İçin) ---
-        st.warning("⚠️ **DİKKAT:** Eğer bu programı internet üzerinden (Bulut) kullanıyorsanız, programı kapatıp açtığınızda verileriniz silinebilir. Verilerinizi korumak için sık sık **'Yedeği İndir'** butonunu kullanınız.")
-        # ---------------------------------------------
+        # UYARI
+        st.warning("⚠️ **ÖNEMLİ BİLGİ:** Streamlit Cloud kullandığınız için bu sayfadan çıktığınızda veriler silinebilir. Verilerinizi korumak için sık sık **'Yedeği İndir'** butonunu kullanın ve tekrar girişte Excel yükleyin.")
         
         t1, t2, t3, t4 = st.tabs(["📥 Excel Stok Yükle", "📝 Sistem Tanımları", "🔐 Şifre Değiştir", "💾 Veritabanı Yedekle"])
         with t1:
