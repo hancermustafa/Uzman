@@ -18,48 +18,73 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (V3.5 - GÜVENLİ VE GÖRÜNÜR MOD) ---
+# --- CSS SİHİRLERİ (V3.6 - HAYALET HEADER TEKNİĞİ) ---
 st.markdown("""
 <style>
-    /* 1. HEADER VE MENÜ BUTONU (FABRİKA AYARI + RENKLENDİRME) */
-    
-    /* Header şeffaf olsun ama yerinde dursun (Menü kaybolmasın diye) */
+    /* 1. HEADER AYARLARI (KRİTİK BÖLÜM) */
+    /* Header'ı gizleme! Şeffaf yap ve tıklamayı arkaya geçir. */
     [data-testid="stHeader"] {
-        background-color: transparent !important;
+        background: transparent !important;
+        pointer-events: none !important; /* Tıklamalar arkaya geçsin */
     }
 
-    /* Menü Açma/Kapama Butonunu BOYUYORUZ (Konumunu bozmuyoruz) */
+    /* 2. MENÜ AÇMA/KAPAMA BUTONU (KAYIP BUTON ÇÖZÜMÜ) */
+    /* Bu butonu header içinden seçip tıklanabilir yapıyoruz */
     [data-testid="stSidebarCollapsedControl"] {
-        color: #FFFFFF !important; /* Ok rengi BEYAZ */
-        background-color: #004D40 !important; /* Zemin KOYU YEŞİL */
-        border: 2px solid #E67E22 !important; /* Çerçeve TURUNCU */
-        border-radius: 8px !important;
+        display: block !important;
+        pointer-events: auto !important; /* Sadece bu buton tıklanabilsin */
+        
+        /* Görünürlük Ayarları */
+        color: #FFFFFF !important; /* Ok Rengi Beyaz */
+        background-color: #004D40 !important; /* Zemin Uzman Yeşili */
+        border: 2px solid #E67E22 !important; /* Çerçeve Turuncu */
+        
+        /* Şekil Şemal */
+        border-radius: 0 12px 12px 0 !important;
+        padding: 8px !important;
+        width: 50px !important;
+        height: 50px !important;
+        
+        /* Konumlandırma (Header içinde doğal akışta kalsın ama belirgin olsun) */
+        margin-top: 10px !important;
+        z-index: 1000001 !important;
         opacity: 1 !important;
+        transition: transform 0.3s ease;
     }
-    
-    /* Butonun üzerine gelince */
+
+    /* Butonun içindeki OK simgesini büyüt ve beyaz yap */
+    [data-testid="stSidebarCollapsedControl"] svg {
+        fill: white !important;
+        width: 30px !important;
+        height: 30px !important;
+    }
+
+    /* Hover (Üzerine gelince) */
     [data-testid="stSidebarCollapsedControl"]:hover {
         background-color: #E67E22 !important; /* Turuncu ol */
         transform: scale(1.1);
     }
 
-    /* 2. GİZLENECEK ÖGELER (TEMİZLİK) */
-    /* Sağ üst menü, Deploy butonu */
-    [data-testid="stToolbar"] { visibility: hidden !important; }
-    [data-testid="stDecoration"] { visibility: hidden !important; }
+    /* 3. İSTENMEYENLERİ GİZLEME (MANAGE APP, DEPLOY VS.) */
+    /* Sağ üstteki 3 nokta ve Deploy */
+    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
+    [data-testid="stDecoration"] { visibility: hidden !important; display: none !important; }
     .stDeployButton { display: none !important; }
     
-    /* Alt Kısımlar (Manage App vb.) - Agresif Gizleme */
+    /* Sağ Alttaki "Manage App" ve Profil Resmi (Çoklu Sınıf Engelleyici) */
     footer { visibility: hidden !important; display: none !important; }
     #MainMenu { visibility: hidden !important; display: none !important; }
     [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
+    
+    /* Yeni Streamlit sürümleri için alt bar gizleme */
     div[class*="viewerBadge"] { display: none !important; }
+    div[class*="StatusWidget"] { display: none !important; }
 
-    /* 3. SOL MENÜ TASARIMI */
+    /* 4. SOL MENÜ TASARIMI */
     [data-testid="stSidebar"] {
         background-color: #004D40;
         background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
-        border-right: 3px solid #E67E22;
+        border-right: 4px solid #E67E22;
     }
     [data-testid="stSidebar"] * { color: white !important; }
     
@@ -69,7 +94,12 @@ st.markdown("""
         margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
     }
 
-    /* 4. GENEL STİLLER */
+    /* 5. GENEL STİLLER */
+    /* Sayfa içeriğini Header'ın altına girmesin diye biraz itelim */
+    .block-container {
+        padding-top: 3rem !important;
+    }
+
     [data-testid="stDataFrame"] th { background-color: #004D40 !important; color: white !important; }
     
     /* Kartlar */
@@ -287,7 +317,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v3.5")
+    st.sidebar.caption("Yönetim Paneli v3.6")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
@@ -360,7 +390,7 @@ if check_password():
                 st.plotly_chart(fig3, use_container_width=True)
         else: st.warning("Veritabanı boş! Lütfen 'Ayarlar' menüsünden Excel dosyanızı yükleyiniz.")
 
-    # --- 2. STOK HAREKET GİRİŞİ ---
+    # --- 2. STOK HAREKET GİRİŞİ (VAZGEÇ BUTONLU) ---
     elif menu == "📝 Stok Hareket Girişi":
         st.markdown("## ⚡ Stok Giriş Çıkış (Fatura Modu)")
         
