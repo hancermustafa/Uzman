@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# 2. CSS SİHİRLERİ (V4.02 - KİLİTLİ MENÜ & TEMİZLİK)
+# 2. CSS SİHİRLERİ (V4.03 - REKLAMSIZ & SABİT MENÜ)
 # =========================================================
 st.markdown("""
 <style>
@@ -76,14 +76,30 @@ st.markdown("""
         }
     }
 
-    /* --- 3. GEREKSİZLERİ TEMİZLEME --- */
+    /* --- 3. İSTENMEYEN REKLAM VE BUTONLARI GİZLEME (KESİN ÇÖZÜM) --- */
+    
+    /* Sağ üstteki "Deploy", "3 Nokta" vb. */
     [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stDecoration"] { display: none !important; }
-    [data-testid="stStatusWidget"] { display: none !important; }
     .stDeployButton { display: none !important; }
+    
+    /* ALT KISIMDAKİ "MANAGE APP" VE "MADE WITH STREAMLIT" */
+    
+    /* 1. Footer'ı (Made with Streamlit) gizle */
+    footer { visibility: hidden !important; display: none !important; }
     #MainMenu { display: none !important; }
-    footer { display: none !important; }
+    
+    /* 2. Sağ Alttaki "Manage App" Butonunu (Viewer Badge) Hedefle */
+    /* Farklı versiyonlar için çoklu seçici kullanıyoruz */
     div[class*="viewerBadge"] { display: none !important; }
+    [data-testid="stStatusWidget"] { display: none !important; }
+    
+    /* Eğer bir link olarak eklenmişse (bazen 'a' tagi olur) */
+    a[href*="streamlit.io/cloud"] { display: none !important; }
+    
+    /* Genel "Bottom" alanındaki fazlalıkları temizle */
+    [data-testid="stBottom"] > div { display: none !important; }
+
 
     /* --- 4. SOL MENÜ TASARIMI --- */
     [data-testid="stSidebar"] {
@@ -275,7 +291,7 @@ def check_password():
         st.session_state["logged_in"] = False
 
     if not st.session_state["logged_in"]:
-        # GİRİŞ YAPILMADIYSA: MENÜYÜ GİZLE
+        # GİRİŞ YAPILMADIYSA: MENÜYÜ GİZLE (CSS)
         st.markdown("""<style>[data-testid="stSidebar"] {display: none;}</style>""", unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1,2,1])
@@ -308,7 +324,7 @@ def check_password():
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v4.02")
+    st.sidebar.caption("Yönetim Paneli v4.03")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
