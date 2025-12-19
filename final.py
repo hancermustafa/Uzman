@@ -18,74 +18,79 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (V3.2 - KESİN ÇÖZÜM) ---
+# --- CSS SİHİRLERİ (V3.3 - KESİN ODAKLANMA) ---
 st.markdown("""
 <style>
-    /* 1. MENÜ AÇMA BUTONU (FIXED POSITION HACK) */
-    /* Bu kod butonu headerdan bağımsız sol üste çiviler */
+    /* 1. MENÜ BUTONU (KAYMA SORUNU ÇÖZÜMÜ) */
+    /* Kutuyu butonun arkasına koymak yerine, butonun kendisini boyuyoruz */
+    
     [data-testid="stSidebarCollapsedControl"] {
-        display: flex !important;
-        justify-content: center;
-        align-items: center;
-        position: fixed !important; /* Sayfaya sabitle */
+        /* Konumlandırma */
+        position: fixed !important;
         top: 15px !important;
         left: 15px !important;
-        z-index: 1000002 !important; /* Her şeyin en üstünde */
+        z-index: 1000005 !important;
+        
+        /* Görünüm */
         background-color: #004D40 !important; /* Uzman Yeşili */
-        color: #FFFFFF !important; /* Ok Rengi Beyaz */
         border: 2px solid #E67E22 !important; /* Turuncu Çerçeve */
         border-radius: 8px !important;
-        width: 45px !important;
-        height: 45px !important;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.3) !important;
-        transition: all 0.3s ease;
+        padding: 4px !important;
+        margin: 0 !important; /* Kaymayı önler */
+        
+        /* Boyutlandırma */
+        width: 44px !important;
+        height: 44px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify_content: center !important;
+        
+        /* Gölge */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
     }
 
-    [data-testid="stSidebarCollapsedControl"]:hover {
-        background-color: #E67E22 !important;
-        transform: scale(1.05);
-    }
-    
-    /* Ok ikonunun kendisini de beyaz yapalım */
-    [data-testid="stSidebarCollapsedControl"] > svg {
+    /* İkonun Rengi (Ok İşareti) */
+    [data-testid="stSidebarCollapsedControl"] svg {
         fill: white !important;
         color: white !important;
+        width: 24px !important;
+        height: 24px !important;
+    }
+    
+    /* Hover Efekti */
+    [data-testid="stSidebarCollapsedControl"]:hover {
+        background-color: #E67E22 !important; /* Üzerine gelince Turuncu olsun */
+        transform: scale(1.05);
+        transition: 0.2s;
     }
 
-    /* 2. HEADER VE GİZLEME İŞLEMLERİ */
-    /* Header şeffaf olsun ama olayları engellemesin */
+    /* HEADER */
     [data-testid="stHeader"] {
         background-color: transparent !important;
-        pointer-events: none !important;
         height: 0px !important; /* Header yer kaplamasın */
-    }
-    
-    /* Sağ üstteki seçenekler, hamburger menü, deploy butonu */
-    [data-testid="stToolbar"], 
-    [data-testid="stHeaderActionElements"], 
-    .stDeployButton, 
-    [data-testid="stDecoration"] {
-        visibility: hidden !important;
-        display: none !important;
+        pointer-events: none; /* Tıklamayı engellemesin */
     }
 
-    /* ALT KISIM (FOOTER & MANAGE APP) GİZLEME - GÜÇLENDİRİLMİŞ */
-    footer { visibility: hidden !important; display: none !important; }
-    #MainMenu { visibility: hidden !important; display: none !important; }
+    /* 2. SİNSİ ALT MENÜLERİ YOK ETME (DEEP CLEANING) */
+    /* İsminde 'viewer', 'badge', 'status' geçen tüm sınıfları gizle */
+    div[class*="viewerBadge"] { display: none !important; }
+    div[class*="StatusWidget"] { display: none !important; }
     
-    /* Sağ alttaki "Manage App" ve Profil ikonunu hedefleyen yeni selectorlar */
-    .stApp > header { display: none !important; }
-    [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
-    div[class*="stStatusWidget"] { display: none !important; }
-    div[data-testid="stToolbar"] { display: none !important; }
-    .viewerBadge_container__1QSob { display: none !important; } /* Yeni Streamlit sürümleri için */
-    [data-testid="stViewerBadge"] { display: none !important; }
+    /* Standart Streamlit elementleri */
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+    [data-testid="stFooter"] { display: none !important; }
+    #MainMenu { display: none !important; }
+    footer { display: none !important; }
+    
+    /* Mobildeki sağ üst menüyü de gizle (Sadece sol menü kalsın) */
+    [data-testid="stHeaderActionElements"] { display: none !important; }
 
     /* 3. SOL MENÜ TASARIMI */
     [data-testid="stSidebar"] {
         background-color: #004D40;
         background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
-        border-right: 2px solid #E67E22; /* Menü bittiği yere çizgi */
+        border-right: 3px solid #E67E22; /* Turuncu sınır çizgisi */
     }
     [data-testid="stSidebar"] * { color: white !important; }
     
@@ -95,10 +100,10 @@ st.markdown("""
         margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
     }
 
-    /* 4. GENEL SAYFA DÜZENİ */
-    /* Sayfanın üst boşluğunu azalt (Header gittiği için) */
-    .block-container {
-        padding-top: 3rem !important; 
+    /* 4. GENEL DÜZENLEMELER */
+    /* Sayfa içeriğini biraz aşağı it (Butonun altında kalmasın) */
+    .main .block-container {
+        padding-top: 3rem !important;
     }
 
     /* Tablolar ve Kartlar */
@@ -318,7 +323,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v3.2")
+    st.sidebar.caption("Yönetim Paneli v3.3")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
