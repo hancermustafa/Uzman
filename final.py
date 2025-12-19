@@ -18,74 +18,83 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (V3.8 - TİTREME ENGELLEYİCİ & SABİT BUTON) ---
-# Bu CSS bloğu sayfa yüklenir yüklenmez çalışır ve her şeyi gizler.
+# =========================================================
+# 2. CSS SİHİRLERİ (KARARLI VE SABİT YAPI)
+# =========================================================
+# Bu CSS bloğu, menü davranışını cihazın genişliğine göre ayarlar.
 st.markdown("""
 <style>
-    /* 1. BAŞLANGIÇTA MENÜYÜ GİZLE (TİTREMEYİ ÖNLER) */
-    /* Varsayılan olarak sidebar kapalı başlasın, giriş yapınca açacağız */
-    [data-testid="stSidebar"] {
-        display: none; 
+    /* --- 1. MASAÜSTÜ İÇİN SABİT MENÜ AYARI (PC) --- */
+    @media (min-width: 992px) {
+        /* Masaüstünde 'Menüyü Kapat' (<<) butonunu tamamen gizle */
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
+        }
+        /* Header'ı masaüstünde gizle ki ekran temiz olsun */
+        [data-testid="stHeader"] {
+            background-color: rgba(0,0,0,0) !important;
+            height: 0px !important;
+            pointer-events: none;
+        }
+        /* Sayfa içeriğini yukarı al */
+        .block-container {
+            padding-top: 2rem !important;
+        }
     }
 
-    /* 2. MENÜ AÇMA BUTONU (SABİT VE GÖRÜNÜR) */
-    /* Bu butonu sayfaya 'çiviliyoruz' (Fixed Position) */
-    [data-testid="stSidebarCollapsedControl"] {
-        display: flex !important;
-        position: fixed !important; /* Sayfa akışından bağımsız */
-        top: 15px !important;
-        left: 15px !important;
-        z-index: 9999999 !important; /* En üst katman */
+    /* --- 2. MOBİL İÇİN AYARLAR (TELEFON/TABLET) --- */
+    @media (max-width: 991px) {
+        /* Mobilde Header GÖRÜNÜR ve BEYAZ olsun (Buton kaybolmasın diye) */
+        [data-testid="stHeader"] {
+            background-color: #FFFFFF !important;
+            visibility: visible !important;
+            height: 60px !important;
+            z-index: 99999 !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
         
-        background-color: #004D40 !important; /* Uzman Yeşili */
-        color: #FFFFFF !important; /* Ok Beyaz */
-        border: 2px solid #E67E22 !important; /* Turuncu Çerçeve */
-        border-radius: 8px !important;
-        
-        width: 45px !important;
-        height: 45px !important;
-        align-items: center !important;
-        justify-content: center !important;
-        
-        box-shadow: 2px 2px 8px rgba(0,0,0,0.4) !important;
-        transition: transform 0.2s ease;
-    }
-    
-    /* Buton İkonu */
-    [data-testid="stSidebarCollapsedControl"] svg {
-        fill: white !important;
-        width: 24px !important;
-        height: 24px !important;
+        /* Menü Açma Butonunu Belirgin Yap */
+        [data-testid="stSidebarCollapsedControl"] {
+            display: flex !important;
+            color: #004D40 !important; /* İkon Yeşil */
+            background-color: transparent !important;
+            border: 2px solid #E67E22 !important; /* Turuncu Çerçeve */
+            border-radius: 5px;
+            margin-top: 5px;
+        }
     }
 
-    /* Hover Efekti */
-    [data-testid="stSidebarCollapsedControl"]:hover {
-        background-color: #E67E22 !important;
-        transform: scale(1.1);
-    }
+    /* --- 3. GİRİŞ EKRANI TİTREMESİNİ (FLICKER) ÖNLEME --- */
+    /* Eğer giriş yapılmadıysa Sidebar'ı CSS ile gizle (Python ile kontrol edilecek) */
+    /* Not: Bu kısım dinamik olarak Python içinde yönetilecek, aşağıya bakınız */
 
-    /* 3. HEADER VE GEREKSİZLERİ TEMİZLEME */
-    /* Header'ı şeffaf yap ve tıklamayı arkaya geçir (Buton çalışsın diye) */
-    [data-testid="stHeader"] {
-        background: transparent !important;
-        pointer-events: none !important;
-        height: 0px !important;
-    }
-    
-    /* Sağ üst ve alt kısımdaki gereksiz ikonları yok et */
-    [data-testid="stToolbar"] { display: none !important; }
-    [data-testid="stDecoration"] { display: none !important; }
-    [data-testid="stStatusWidget"] { display: none !important; }
+    /* --- 4. GEREKSİZLERİ GİZLEME (MANAGE APP, FOOTER) --- */
+    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
+    [data-testid="stDecoration"] { visibility: hidden !important; display: none !important; }
+    [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
     .stDeployButton { display: none !important; }
-    footer { display: none !important; }
-    #MainMenu { display: none !important; }
+    #MainMenu { visibility: hidden !important; display: none !important; }
+    footer { visibility: hidden !important; display: none !important; }
     div[class*="viewerBadge"] { display: none !important; }
 
-    /* 4. GENEL STİLLER */
-    .block-container { padding-top: 3rem !important; }
+    /* --- 5. SOL MENÜ TASARIMI (UZMAN YEŞİLİ) --- */
+    [data-testid="stSidebar"] {
+        background-color: #004D40;
+        background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
+        border-right: 4px solid #E67E22;
+    }
+    [data-testid="stSidebar"] * { color: white !important; }
     
-    /* Tablo ve Kartlar */
+    /* Logo Kutusu */
+    [data-testid="stSidebar"] > div:first-child img {
+        background-color: #ffffff; padding: 15px; border-radius: 15px; 
+        margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+    }
+
+    /* --- 6. GENEL ELEMENTLER --- */
     [data-testid="stDataFrame"] th { background-color: #004D40 !important; color: white !important; }
+    
+    /* Kartlar */
     div[data-testid="stMetric"] {
         background-color: #FFFFFF !important; border: 1px solid #E0E0E0 !important;
         border-radius: 10px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -115,7 +124,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 2. VERİTABANI BAĞLANTISI
+# 3. VERİTABANI VE FONKSİYONLAR
 # =========================================================
 DB_FILE = 'Uzman_Dat.db'
 
@@ -130,23 +139,17 @@ def init_db():
             ModelUyumluluk TEXT, RafYeri TEXT, Birim TEXT, PacalMaliyet REAL, 
             SonAlisFiyati REAL, SatisFiyati REAL, SatisFiyatiNet REAL, 
             KritikLimit INTEGER, MevcutStok INTEGER, Segment TEXT, SonGuncelleme TIMESTAMP)''')
-            
         cursor.execute('''CREATE TABLE IF NOT EXISTS hareketler (
             id INTEGER PRIMARY KEY AUTOINCREMENT, Tarih TIMESTAMP, EvrakNo TEXT, 
             IslemTipi TEXT, UrunAdi TEXT, Cari TEXT, Personel TEXT, Miktar INTEGER, 
             BirimFiyat REAL, KDVOrani INTEGER, KDVTutari REAL, GenelToplam REAL, IslemZamani TIMESTAMP)''')
-            
         cursor.execute('''CREATE TABLE IF NOT EXISTS tanimlar (
             Kategori TEXT, Birim TEXT, KDV INTEGER, Cari TEXT, Personel TEXT)''')
-            
         cursor.execute('''CREATE TABLE IF NOT EXISTS admin (
             kullanici TEXT PRIMARY KEY, sifre TEXT)''')
-
         cursor.execute("SELECT Count(*) FROM tanimlar")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO tanimlar (Personel, Cari, Kategori) VALUES (?,?,?)", 
-                           ("Genel Personel", "Peşin Müşteri", "Genel Parça"))
-        
+            cursor.execute("INSERT INTO tanimlar (Personel, Cari, Kategori) VALUES (?,?,?)", ("Genel Personel", "Peşin Müşteri", "Genel Parça"))
         cursor.execute("SELECT Count(*) FROM admin")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO admin (kullanici, sifre) VALUES (?,?)", ("admin", "1234"))
@@ -154,9 +157,7 @@ def init_db():
 
 init_db()
 
-# =========================================================
-# 3. YARDIMCI FONKSİYONLAR
-# =========================================================
+# --- Logo ---
 def show_logo():
     if os.path.exists("Uzman.png"):
         st.sidebar.image("Uzman.png", use_container_width=True)
@@ -165,40 +166,7 @@ def show_logo():
     else:
         st.sidebar.markdown("<h2 style='color:white; text-align:center; background-color:rgba(255,255,255,0.1); padding:10px; border-radius:10px;'>🚘 UZMAN OTO</h2>", unsafe_allow_html=True)
 
-def check_password():
-    if "logged_in" not in st.session_state:
-        st.session_state["logged_in"] = False
-
-    if not st.session_state["logged_in"]:
-        col1, col2, col3 = st.columns([1,2,1])
-        with col2:
-            st.markdown("<br><br>", unsafe_allow_html=True)
-            if os.path.exists("Uzman.png"):
-                st.image("Uzman.png", width=200)
-            else:
-                st.markdown("<h1 style='text-align: center; color:#004D40;'>🚘</h1>", unsafe_allow_html=True)
-            st.markdown("<h2 style='text-align: center; color: #333;'>YÖNETİM PANELİ</h2>", unsafe_allow_html=True)
-            with st.form("login_form"):
-                user = st.text_input("Kullanıcı Adı")
-                pw = st.text_input("Şifre", type="password")
-                if st.form_submit_button("GİRİŞ YAP"):
-                    with get_connection() as conn:
-                        cur = conn.cursor()
-                        cur.execute("SELECT * FROM admin WHERE kullanici=? AND sifre=?", (user, pw))
-                        if cur.fetchone():
-                            st.session_state["logged_in"] = True
-                            st.success("Giriş Başarılı!")
-                            time.sleep(0.5)
-                            st.rerun()
-                        else: st.error("Hatalı Giriş!")
-        return False
-    return True
-
-def backup_db():
-    try:
-        with open(DB_FILE, "rb") as f: return f.read()
-    except: return None
-
+# --- Excel & PDF ---
 def process_excel_import(uploaded_file):
     try:
         if uploaded_file.name.endswith('.csv'): df = pd.read_csv(uploaded_file)
@@ -293,39 +261,66 @@ def indirme_butonlari(df, isim):
     c2.download_button("📄 CSV İndir", df.to_csv(index=False).encode('utf-8'), f"{isim}.csv")
     c3.download_button("📕 PDF İndir", create_pdf(df), f"{isim}.pdf")
 
+def backup_db():
+    try:
+        with open(DB_FILE, "rb") as f: return f.read()
+    except: return None
+
 # =========================================================
-# 4. GİRİŞ KONTROLÜ VE MENÜ
+# 4. GİRİŞ KONTROLÜ (TİTREME ENGELLEYİCİ MANTIK)
+# =========================================================
+def check_password():
+    if "logged_in" not in st.session_state:
+        st.session_state["logged_in"] = False
+
+    if not st.session_state["logged_in"]:
+        # GİRİŞ YAPILMADIYSA: MENÜYÜ GİZLE
+        st.markdown("""
+        <style>
+            [data-testid="stSidebar"] { display: none !important; }
+            [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([1,2,1])
+        with col2:
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            if os.path.exists("Uzman.png"):
+                st.image("Uzman.png", width=200)
+            else:
+                st.markdown("<h1 style='text-align: center; color:#004D40;'>🚘</h1>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: #333;'>YÖNETİM PANELİ</h2>", unsafe_allow_html=True)
+            with st.form("login_form"):
+                user = st.text_input("Kullanıcı Adı")
+                pw = st.text_input("Şifre", type="password")
+                if st.form_submit_button("GİRİŞ YAP"):
+                    with get_connection() as conn:
+                        cur = conn.cursor()
+                        cur.execute("SELECT * FROM admin WHERE kullanici=? AND sifre=?", (user, pw))
+                        if cur.fetchone():
+                            st.session_state["logged_in"] = True
+                            st.success("Giriş Başarılı!")
+                            time.sleep(0.5)
+                            st.rerun()
+                        else: st.error("Hatalı Giriş!")
+        return False
+    else:
+        # GİRİŞ YAPILDIYSA: MENÜYÜ GÖSTER
+        # Sadece masaüstünde menüyü zorla açık tutan CSS burada devreye giriyor.
+        return True
+
+# =========================================================
+# 5. UYGULAMA AKIŞI
 # =========================================================
 if check_password():
-    # --- BURAYA DİKKAT: MENÜYÜ SADECE GİRİŞ YAPINCA GÖSTER ---
-    st.markdown("""
-    <style>
-        [data-testid="stSidebar"] {
-            display: block !important; /* Menü artık görünebilir */
-            background-color: #004D40;
-            background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
-            border-right: 4px solid #E67E22;
-        }
-        [data-testid="stSidebar"] * { color: white !important; }
-        
-        /* Logo Kutusu */
-        [data-testid="stSidebar"] > div:first-child img {
-            background-color: #ffffff; padding: 15px; border-radius: 15px; 
-            margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
-        }
-    </style>
-    """, unsafe_allow_html=True)
-    # ---------------------------------------------------------
-
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v3.8")
+    st.sidebar.caption("Yönetim Paneli v3.9")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
         st.rerun()
 
-    # --- MENÜ İSİMLERİ ---
     menu = st.sidebar.radio("MENÜ", [
         "📊 Dashboard", 
         "📝 Stok Hareket Girişi", 
@@ -392,7 +387,7 @@ if check_password():
                 st.plotly_chart(fig3, use_container_width=True)
         else: st.warning("Veritabanı boş! Lütfen 'Ayarlar' menüsünden Excel dosyanızı yükleyiniz.")
 
-    # --- 2. STOK HAREKET GİRİŞİ (VAZGEÇ BUTONLU) ---
+    # --- 2. STOK HAREKET GİRİŞİ ---
     elif menu == "📝 Stok Hareket Girişi":
         st.markdown("## ⚡ Stok Giriş Çıkış (Fatura Modu)")
         
@@ -447,7 +442,6 @@ if check_password():
                 
                 col_save, col_cancel = st.columns(2)
                 
-                # KAYDET BUTONU
                 if col_save.button("✅ FİŞİ TAMAMLA", type="primary", use_container_width=True):
                     if not evrak: st.error("Lütfen Evrak No giriniz!")
                     else:
@@ -459,13 +453,12 @@ if check_password():
                                 yeni_stok = cur_stok - item['Miktar'] if "Çıkış" in islem else cur_stok + item['Miktar']
                                 conn.execute("UPDATE stoklar SET MevcutStok=? WHERE StokKodu=?", (yeni_stok, item['StokKodu']))
                             conn.commit()
-                        st.session_state['sepet'] = [] # Sepeti temizle
+                        st.session_state['sepet'] = [] 
                         st.balloons()
-                        st.success("Kaydedildi! Ekran temizleniyor...")
+                        st.success("Kaydedildi!")
                         time.sleep(1.5)
-                        st.rerun() # EKRANI YENİLE
+                        st.rerun() 
                 
-                # VAZGEÇ BUTONU (YENİ)
                 if col_cancel.button("❌ VAZGEÇ (TEMİZLE)", type="secondary", use_container_width=True):
                     st.session_state['sepet'] = []
                     st.warning("Liste temizlendi.")
