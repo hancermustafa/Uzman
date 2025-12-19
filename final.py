@@ -18,41 +18,65 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (V3.0 - MENÜ KURTARMA VE TEMİZLİK) ---
+# --- CSS SİHİRLERİ (V3.1 - MENÜ VE İKON KURTARMA) ---
 st.markdown("""
 <style>
-    /* 1. HEADER VE MENÜ BUTONU (KRİTİK DÜZELTME) */
-    /* Header şeffaf olsun ama içindeki butonlar tıklanabilsin */
+    /* 1. MENÜ AÇMA/KAPAMA BUTONU (KRİTİK DÜZELTME) */
+    /* Header'ı tamamen gizlemek yerine şeffaf yapıp tıklamayı açıyoruz */
     [data-testid="stHeader"] {
         background-color: transparent !important;
-        z-index: 1;
+        pointer-events: none; /* Header'ın kendisi tıklamayı engellemesin */
     }
     
-    /* Menü Kapalıyken Çıkan Ok (>) İşareti */
-    [data-testid="stSidebarCollapsedControl"] {
-        display: block !important;
-        color: #FFFFFF !important; /* Ok rengi beyaz */
-        background-color: #004D40 !important; /* Arka plan Uzman Yeşili */
-        border-radius: 0 10px 10px 0;
-        border: 2px solid #E67E22; /* Turuncu çerçeve (Görünürlük için) */
-        z-index: 999999 !important; /* En üstte durmaya zorla */
-        font-weight: bold;
-    }
-    
-    /* Mobilde hamburger menü bazen farklı class kullanır, onu da garantiye alalım */
-    [data-testid="stHeaderActionElements"] {
-        z-index: 999999 !important;
+    /* Menü butonunu ve sağ üst butonları tıklanabilir yap */
+    [data-testid="stHeader"] > * {
+        pointer-events: auto;
     }
 
-    /* 2. GİZLEME İŞLEMLERİ (MANAGE APP VS.) */
-    /* Sağ üstteki 3 nokta, deploy butonu ve sağ alttaki "Manage app" */
-    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
-    [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
-    [data-testid="stDecoration"] { visibility: hidden !important; display: none !important; }
+    /* MENÜ KAPALIYKEN ÇIKAN OK (>) BUTONU */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: block !important;
+        color: #FFFFFF !important; /* Ok rengi BEYAZ */
+        background-color: #004D40 !important; /* Zemin UZMAN YEŞİLİ */
+        border: 2px solid #E67E22 !important; /* Çerçeve TURUNCU (Görünürlük için) */
+        border-radius: 0 12px 12px 0 !important;
+        padding: 5px !important;
+        opacity: 1 !important;
+        z-index: 9999999 !important; /* En üst katmanda olsun */
+        position: fixed !important; /* Sabitlensin */
+        left: 0px !important;
+        top: 60px !important; /* Biraz aşağı alalım ki header ile çakışmasın */
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    /* Butonun üzerine gelince */
+    [data-testid="stSidebarCollapsedControl"]:hover {
+        background-color: #D35400 !important;
+        transform: scale(1.1);
+        transition: all 0.3s;
+    }
+
+    /* 2. GİZLEME İŞLEMLERİ (MANAGE APP, FOOTER, PROFİL) */
+    /* Alt kısımdaki "Manage app" ve profil ikonunu YOK ET */
+    [data-testid="stStatusWidget"] { 
+        visibility: hidden !important; 
+        display: none !important; 
+        height: 0px !important; 
+    }
+    
+    /* Sağ üstteki 3 nokta menüsü ve Deploy butonu */
+    [data-testid="stToolbar"] { 
+        visibility: hidden !important; 
+        display: none !important; 
+    }
     .stDeployButton { display: none !important; }
+    
+    /* Streamlit Footer ve Hamburger Menü */
     #MainMenu { visibility: hidden !important; display: none !important; }
     footer { visibility: hidden !important; display: none !important; }
-    
+    header[data-testid="stHeader"] { z-index: 1; }
+
     /* 3. SOL MENÜ TASARIMI */
     [data-testid="stSidebar"] {
         background-color: #004D40;
@@ -283,13 +307,13 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v3.0")
+    st.sidebar.caption("Yönetim Paneli v3.1")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
         st.rerun()
 
-    # --- MENÜ İSİMLERİ DÜZELTİLDİ ---
+    # --- MENÜ İSİMLERİ (DÜZELTİLMİŞ) ---
     menu = st.sidebar.radio("MENÜ", [
         "📊 Dashboard", 
         "📝 Stok Hareket Girişi", 
@@ -356,7 +380,7 @@ if check_password():
                 st.plotly_chart(fig3, use_container_width=True)
         else: st.warning("Veritabanı boş! Lütfen 'Ayarlar' menüsünden Excel dosyanızı yükleyiniz.")
 
-    # --- 2. STOK HAREKET GİRİŞİ (YENİLENMİŞ) ---
+    # --- 2. STOK HAREKET GİRİŞİ (VAZGEÇ BUTONLU) ---
     elif menu == "📝 Stok Hareket Girişi":
         st.markdown("## ⚡ Stok Giriş Çıkış (Fatura Modu)")
         
@@ -438,7 +462,7 @@ if check_password():
                     
             else: st.info("Liste boş.")
 
-    # --- 3. STOK KARTLARI (İSİM DÜZELDİ) ---
+    # --- 3. STOK KARTLARI ---
     elif menu == "📦 Stok Kartları":
         st.markdown("## 📦 Stok Kartları")
         tab_list, tab_ekle = st.tabs(["📋 Stok Listesi ve Raporlama", "➕ Tekil Ürün Ekle / Düzenle"])
