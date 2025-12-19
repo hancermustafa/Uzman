@@ -18,24 +18,42 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (GELİŞMİŞ GİZLEME) ---
+# --- CSS SİHİRLERİ (V3.0 - MENÜ KURTARMA VE TEMİZLİK) ---
 st.markdown("""
 <style>
-    /* 1. Header ve Profil İkonlarını Gizleme */
-    [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
-    [data-testid="stToolbar"] { visibility: hidden !important; } /* Sağ üst seçenekler */
-    [data-testid="stStatusWidget"] { visibility: hidden !important; } /* Sağ alt profil/manage app */
-    .stDeployButton { display: none !important; } /* Deploy butonu */
-    #MainMenu { visibility: hidden !important; }
-    footer { visibility: hidden !important; }
-
-    /* 2. Menü Açma/Kapama Düğmesi */
+    /* 1. HEADER VE MENÜ BUTONU (KRİTİK DÜZELTME) */
+    /* Header şeffaf olsun ama içindeki butonlar tıklanabilsin */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+        z-index: 1;
+    }
+    
+    /* Menü Kapalıyken Çıkan Ok (>) İşareti */
     [data-testid="stSidebarCollapsedControl"] {
-        color: #004D40 !important; background-color: white;
-        border-radius: 0 10px 10px 0; border: 1px solid #004D40;
+        display: block !important;
+        color: #FFFFFF !important; /* Ok rengi beyaz */
+        background-color: #004D40 !important; /* Arka plan Uzman Yeşili */
+        border-radius: 0 10px 10px 0;
+        border: 2px solid #E67E22; /* Turuncu çerçeve (Görünürlük için) */
+        z-index: 999999 !important; /* En üstte durmaya zorla */
+        font-weight: bold;
+    }
+    
+    /* Mobilde hamburger menü bazen farklı class kullanır, onu da garantiye alalım */
+    [data-testid="stHeaderActionElements"] {
+        z-index: 999999 !important;
     }
 
-    /* 3. Sol Menü Tasarımı */
+    /* 2. GİZLEME İŞLEMLERİ (MANAGE APP VS.) */
+    /* Sağ üstteki 3 nokta, deploy butonu ve sağ alttaki "Manage app" */
+    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
+    [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
+    [data-testid="stDecoration"] { visibility: hidden !important; display: none !important; }
+    .stDeployButton { display: none !important; }
+    #MainMenu { visibility: hidden !important; display: none !important; }
+    footer { visibility: hidden !important; display: none !important; }
+    
+    /* 3. SOL MENÜ TASARIMI */
     [data-testid="stSidebar"] {
         background-color: #004D40;
         background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
@@ -48,7 +66,7 @@ st.markdown("""
         margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
     }
 
-    /* 4. Tablolar ve Kartlar */
+    /* 4. TABLOLAR VE KARTLAR */
     [data-testid="stDataFrame"] th { background-color: #004D40 !important; color: white !important; }
     
     div[data-testid="stMetric"] {
@@ -59,14 +77,14 @@ st.markdown("""
     div[data-testid="stMetricLabel"] p { color: #555 !important; font-weight: bold; }
     div[data-testid="stMetricValue"] div { color: #000 !important; }
 
-    /* 5. Butonlar */
+    /* 5. BUTONLAR */
     .stButton > button {
         background-color: #E67E22 !important; color: white !important;
         border: none; border-radius: 8px; font-weight: bold;
     }
     .stButton > button:hover { background-color: #D35400 !important; }
 
-    /* 6. Fiş Kutusu */
+    /* 6. FİŞ KUTUSU */
     .fiş-kutusu {
         background-color: #E3F2FD; padding: 20px; border-radius: 12px; 
         border: 2px solid #1565C0; text-align: center; margin: 20px 0;
@@ -265,7 +283,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v2.9")
+    st.sidebar.caption("Yönetim Paneli v3.0")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
