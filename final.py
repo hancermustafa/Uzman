@@ -18,69 +18,74 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS SİHİRLERİ (V3.1 - MENÜ VE İKON KURTARMA) ---
+# --- CSS SİHİRLERİ (V3.2 - KESİN ÇÖZÜM) ---
 st.markdown("""
 <style>
-    /* 1. MENÜ AÇMA/KAPAMA BUTONU (KRİTİK DÜZELTME) */
-    /* Header'ı tamamen gizlemek yerine şeffaf yapıp tıklamayı açıyoruz */
+    /* 1. MENÜ AÇMA BUTONU (FIXED POSITION HACK) */
+    /* Bu kod butonu headerdan bağımsız sol üste çiviler */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        position: fixed !important; /* Sayfaya sabitle */
+        top: 15px !important;
+        left: 15px !important;
+        z-index: 1000002 !important; /* Her şeyin en üstünde */
+        background-color: #004D40 !important; /* Uzman Yeşili */
+        color: #FFFFFF !important; /* Ok Rengi Beyaz */
+        border: 2px solid #E67E22 !important; /* Turuncu Çerçeve */
+        border-radius: 8px !important;
+        width: 45px !important;
+        height: 45px !important;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.3) !important;
+        transition: all 0.3s ease;
+    }
+
+    [data-testid="stSidebarCollapsedControl"]:hover {
+        background-color: #E67E22 !important;
+        transform: scale(1.05);
+    }
+    
+    /* Ok ikonunun kendisini de beyaz yapalım */
+    [data-testid="stSidebarCollapsedControl"] > svg {
+        fill: white !important;
+        color: white !important;
+    }
+
+    /* 2. HEADER VE GİZLEME İŞLEMLERİ */
+    /* Header şeffaf olsun ama olayları engellemesin */
     [data-testid="stHeader"] {
         background-color: transparent !important;
-        pointer-events: none; /* Header'ın kendisi tıklamayı engellemesin */
+        pointer-events: none !important;
+        height: 0px !important; /* Header yer kaplamasın */
     }
     
-    /* Menü butonunu ve sağ üst butonları tıklanabilir yap */
-    [data-testid="stHeader"] > * {
-        pointer-events: auto;
+    /* Sağ üstteki seçenekler, hamburger menü, deploy butonu */
+    [data-testid="stToolbar"], 
+    [data-testid="stHeaderActionElements"], 
+    .stDeployButton, 
+    [data-testid="stDecoration"] {
+        visibility: hidden !important;
+        display: none !important;
     }
 
-    /* MENÜ KAPALIYKEN ÇIKAN OK (>) BUTONU */
-    [data-testid="stSidebarCollapsedControl"] {
-        display: block !important;
-        color: #FFFFFF !important; /* Ok rengi BEYAZ */
-        background-color: #004D40 !important; /* Zemin UZMAN YEŞİLİ */
-        border: 2px solid #E67E22 !important; /* Çerçeve TURUNCU (Görünürlük için) */
-        border-radius: 0 12px 12px 0 !important;
-        padding: 5px !important;
-        opacity: 1 !important;
-        z-index: 9999999 !important; /* En üst katmanda olsun */
-        position: fixed !important; /* Sabitlensin */
-        left: 0px !important;
-        top: 60px !important; /* Biraz aşağı alalım ki header ile çakışmasın */
-        width: 40px !important;
-        height: 40px !important;
-    }
-    
-    /* Butonun üzerine gelince */
-    [data-testid="stSidebarCollapsedControl"]:hover {
-        background-color: #D35400 !important;
-        transform: scale(1.1);
-        transition: all 0.3s;
-    }
-
-    /* 2. GİZLEME İŞLEMLERİ (MANAGE APP, FOOTER, PROFİL) */
-    /* Alt kısımdaki "Manage app" ve profil ikonunu YOK ET */
-    [data-testid="stStatusWidget"] { 
-        visibility: hidden !important; 
-        display: none !important; 
-        height: 0px !important; 
-    }
-    
-    /* Sağ üstteki 3 nokta menüsü ve Deploy butonu */
-    [data-testid="stToolbar"] { 
-        visibility: hidden !important; 
-        display: none !important; 
-    }
-    .stDeployButton { display: none !important; }
-    
-    /* Streamlit Footer ve Hamburger Menü */
-    #MainMenu { visibility: hidden !important; display: none !important; }
+    /* ALT KISIM (FOOTER & MANAGE APP) GİZLEME - GÜÇLENDİRİLMİŞ */
     footer { visibility: hidden !important; display: none !important; }
-    header[data-testid="stHeader"] { z-index: 1; }
+    #MainMenu { visibility: hidden !important; display: none !important; }
+    
+    /* Sağ alttaki "Manage App" ve Profil ikonunu hedefleyen yeni selectorlar */
+    .stApp > header { display: none !important; }
+    [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
+    div[class*="stStatusWidget"] { display: none !important; }
+    div[data-testid="stToolbar"] { display: none !important; }
+    .viewerBadge_container__1QSob { display: none !important; } /* Yeni Streamlit sürümleri için */
+    [data-testid="stViewerBadge"] { display: none !important; }
 
     /* 3. SOL MENÜ TASARIMI */
     [data-testid="stSidebar"] {
         background-color: #004D40;
         background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
+        border-right: 2px solid #E67E22; /* Menü bittiği yere çizgi */
     }
     [data-testid="stSidebar"] * { color: white !important; }
     
@@ -90,7 +95,13 @@ st.markdown("""
         margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
     }
 
-    /* 4. TABLOLAR VE KARTLAR */
+    /* 4. GENEL SAYFA DÜZENİ */
+    /* Sayfanın üst boşluğunu azalt (Header gittiği için) */
+    .block-container {
+        padding-top: 3rem !important; 
+    }
+
+    /* Tablolar ve Kartlar */
     [data-testid="stDataFrame"] th { background-color: #004D40 !important; color: white !important; }
     
     div[data-testid="stMetric"] {
@@ -101,14 +112,14 @@ st.markdown("""
     div[data-testid="stMetricLabel"] p { color: #555 !important; font-weight: bold; }
     div[data-testid="stMetricValue"] div { color: #000 !important; }
 
-    /* 5. BUTONLAR */
+    /* Butonlar */
     .stButton > button {
         background-color: #E67E22 !important; color: white !important;
         border: none; border-radius: 8px; font-weight: bold;
     }
     .stButton > button:hover { background-color: #D35400 !important; }
 
-    /* 6. FİŞ KUTUSU */
+    /* Fiş Kutusu */
     .fiş-kutusu {
         background-color: #E3F2FD; padding: 20px; border-radius: 12px; 
         border: 2px solid #1565C0; text-align: center; margin: 20px 0;
@@ -307,7 +318,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v3.1")
+    st.sidebar.caption("Yönetim Paneli v3.2")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
