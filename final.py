@@ -260,13 +260,20 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v2.7")
+    st.sidebar.caption("Yönetim Paneli v2.8")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
         st.rerun()
 
-    menu = st.sidebar.radio("MENÜ", ["📊 Dashboard", "📦 Stok Yönetimi", "📝 Hareket Girişi", "📈 Raporlar & Analiz", "⚙️ Ayarlar"])
+    # --- MENÜ SIRALAMASI VE İSİMLENDİRME DÜZENLEMESİ ---
+    menu = st.sidebar.radio("MENÜ", [
+        "📊 Dashboard", 
+        "📝 STOK HAREKET GİRİŞİ", 
+        "📦 STOK KARTLARI", 
+        "📈 Raporlar & Analiz", 
+        "⚙️ Ayarlar"
+    ])
 
     conn = get_connection()
     # 🚨 DATA TİPİ ZORLAMA
@@ -327,120 +334,8 @@ if check_password():
                 st.plotly_chart(fig3, use_container_width=True)
         else: st.warning("Veritabanı boş! Lütfen 'Ayarlar' menüsünden Excel dosyanızı yükleyiniz.")
 
-    # --- 2. STOK YÖNETİMİ ---
-    elif menu == "📦 Stok Yönetimi":
-        st.markdown("## 📦 Stok Kartları")
-        tab_list, tab_ekle = st.tabs(["📋 Stok Listesi ve Raporlama", "➕ Tekil Ürün Ekle / Düzenle"])
-        
-        # --- TAB 1: GELİŞMİŞ LİSTELEME VE İNDİRME ---
-        with tab_list:
-            with st.expander("🔍 Detaylı Filtreleme Seçenekleri", expanded=True):
-                col_search, col_seg = st.columns([2, 1])
-                search = col_search.text_input("Genel Arama", placeholder="Barkod, İsim, Raf Yeri...")
-                
-                col_kat, col_mod = st.columns(2)
-                # Kategori Filtresi
-                kat_list = df_stok['Kategori'].unique().tolist() if 'Kategori' in df_stok.columns else []
-                sel_kat = col_kat.multiselect("Kategori Filtrele", kat_list)
-                
-                # Model Filtresi
-                mod_list = df_stok['ModelUyumluluk'].unique().tolist() if 'ModelUyumluluk' in df_stok.columns else []
-                sel_mod = col_mod.multiselect("Araç Modeli Filtrele", mod_list)
-                
-                # Segment Filtresi
-                seg_list = df_stok['Segment'].unique().tolist() if 'Segment' in df_stok.columns else []
-                sel_seg = col_seg.multiselect("Segment", seg_list)
-            
-            # Filtreleme Mantığı
-            view = df_stok.copy()
-            if search: view = view[view.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
-            if sel_kat: view = view[view['Kategori'].isin(sel_kat)]
-            if sel_mod: view = view[view['ModelUyumluluk'].isin(sel_mod)]
-            if sel_seg: view = view[view['Segment'].isin(sel_seg)]
-            
-            view['Durum'] = view.apply(lambda x: "⚠️ KRİTİK" if x['MevcutStok'] <= x['KritikLimit'] else "✅ OK", axis=1)
-            
-            st.dataframe(view, use_container_width=True, height=500)
-            st.markdown("### 📥 Listeyi Dışarı Aktar")
-            indirme_butonlari(view, "filtrelenmis_stok_listesi")
-
-        # --- TAB 2: TEKİL ÜRÜN EKLEME VE DÜZENLEME (YENİLENDİ) ---
-        with tab_ekle:
-            st.info("Ürün bilgilerini buradan detaylıca yönetebilirsiniz.")
-            
-            mod = st.radio("İşlem Modu Seçiniz:", ["🆕 Yeni Ürün Ekle", "✏️ Mevcut Ürünü Düzenle"], horizontal=True)
-            st.divider()
-            
-            # Varsayılan Değerler
-            def_kod, def_ad, def_raf = "", "", ""
-            def_stok, def_alis, def_satis = 0, 0.0, 0.0
-            def_kat, def_mod, def_seg = "Genel", "Genel", "C"
-            def_limit = 5
-            
-            # Eğer DÜZENLEME modu seçildiyse:
-            if "Düzenle" in mod:
-                secilen_urun_adi = st.selectbox("Düzenlenecek Ürünü Listeden Seçiniz:", df_stok['UrunAdi'].unique())
-                if secilen_urun_adi:
-                    # Seçilen ürünün verilerini çek
-                    rec = df_stok[df_stok['UrunAdi'] == secilen_urun_adi].iloc[0]
-                    def_kod = rec['StokKodu']
-                    def_ad = rec['UrunAdi']
-                    def_raf = rec['RafYeri']
-                    def_stok = int(rec['MevcutStok'])
-                    def_alis = float(rec['PacalMaliyet']) if rec['PacalMaliyet'] > 0 else float(rec.get('SonAlisFiyati', 0))
-                    def_satis = float(rec['SatisFiyati'])
-                    def_kat = rec['Kategori'] if rec['Kategori'] else "Genel"
-                    def_mod = rec['ModelUyumluluk'] if rec['ModelUyumluluk'] else "Genel"
-                    def_seg = rec['Segment'] if rec['Segment'] else "C"
-                    def_limit = int(rec['KritikLimit']) if rec['KritikLimit'] else 5
-            
-            with st.form("urun_form"):
-                c1, c2 = st.columns(2)
-                kod = c1.text_input("Stok Kodu / Barkod", value=def_kod)
-                ad = c2.text_input("Ürün Adı", value=def_ad)
-                
-                c3, c4, c5 = st.columns(3)
-                kat = c3.text_input("Kategori", value=def_kat, help="Örn: Filtre, Fren, Motor")
-                model = c4.text_input("Uyumlu Model", value=def_mod, help="Örn: Clio 4, Megane 2")
-                raf = c5.text_input("Raf Yeri", value=def_raf)
-                
-                c6, c7, c8 = st.columns(3)
-                alis = c6.number_input("Alış Fiyatı (Maliyet)", min_value=0.0, value=def_alis, format="%.2f")
-                satis = c7.number_input("Satış Fiyatı (KDV Dahil)", min_value=0.0, value=def_satis, format="%.2f")
-                stok = c8.number_input("Mevcut Stok Adedi", min_value=0, value=def_stok)
-                
-                c9, c10 = st.columns(2)
-                seg = c9.selectbox("Segment", ["A", "B", "C", "D", "E", "M"], index=["A", "B", "C", "D", "E", "M"].index(def_seg) if def_seg in ["A", "B", "C", "D", "E", "M"] else 2)
-                limit = c10.number_input("Kritik Stok Limiti", min_value=1, value=def_limit)
-                
-                submit = st.form_submit_button("💾 KAYDET / GÜNCELLE")
-                
-                if submit:
-                    if kod and ad:
-                        with get_connection() as conn:
-                            net_satis = satis / 1.20 # KDV %20 Varsayımı
-                            try:
-                                # Gelişmiş INSERT OR REPLACE sorgusu
-                                conn.execute("""
-                                    INSERT INTO stoklar (StokKodu, UrunAdi, RafYeri, SatisFiyati, SatisFiyatiNet, MevcutStok, PacalMaliyet, SonAlisFiyati, KritikLimit, Kategori, ModelUyumluluk, Segment, SonGuncelleme)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                    ON CONFLICT(StokKodu) DO UPDATE SET
-                                    UrunAdi=excluded.UrunAdi, RafYeri=excluded.RafYeri, SatisFiyati=excluded.SatisFiyati, 
-                                    SatisFiyatiNet=excluded.SatisFiyatiNet, MevcutStok=excluded.MevcutStok, PacalMaliyet=excluded.PacalMaliyet,
-                                    SonAlisFiyati=excluded.SonAlisFiyati, KritikLimit=excluded.KritikLimit, Kategori=excluded.Kategori,
-                                    ModelUyumluluk=excluded.ModelUyumluluk, Segment=excluded.Segment, SonGuncelleme=excluded.SonGuncelleme
-                                """, (kod, ad, raf, satis, net_satis, stok, alis, alis, limit, kat, model, seg, datetime.now()))
-                                conn.commit()
-                                st.success(f"✅ {ad} başarıyla kaydedildi!")
-                                time.sleep(1)
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Hata oluştu: {e}")
-                    else:
-                        st.warning("Lütfen Stok Kodu ve Ürün Adı alanlarını doldurunuz.")
-
-    # --- 3. HAREKET GİRİŞİ (SEPET SİSTEMİ) ---
-    elif menu == "📝 Hareket Girişi":
+    # --- 2. STOK HAREKET GİRİŞİ (YENİ SIRADA) ---
+    elif menu == "📝 STOK HAREKET GİRİŞİ":
         st.markdown("## ⚡ Stok Giriş Çıkış (Fatura Modu)")
         
         if 'sepet' not in st.session_state: st.session_state['sepet'] = []
@@ -467,7 +362,7 @@ if check_password():
                 fiyat = c_price.number_input("Birim Fiyat", value=float(rec['SatisFiyati']))
                 
                 kdv_tip = c_kdv.radio("KDV", ["Dahil", "Hariç"], horizontal=True)
-                kdv_oran = st.selectbox("KDV Oranı", [0,1,8,10,18,20], index=5) # LABEL DÜZELTİLDİ
+                kdv_oran = st.selectbox("KDV Oranı", [0,1,8,10,18,20], index=5)
                 
                 if c_btn.button("➕ Listeye Ekle", use_container_width=True):
                     ham = miktar * fiyat
@@ -508,6 +403,111 @@ if check_password():
                         st.success("Kaydedildi!")
                         time.sleep(1.5); st.rerun()
             else: st.info("Liste boş.")
+
+    # --- 3. STOK KARTLARI (YENİ İSİM VE SIRA) ---
+    elif menu == "📦 STOK KARTLARI":
+        st.markdown("## 📦 Stok Kartları")
+        tab_list, tab_ekle = st.tabs(["📋 Stok Listesi ve Raporlama", "➕ Tekil Ürün Ekle / Düzenle"])
+        
+        # --- TAB 1: GELİŞMİŞ LİSTELEME VE İNDİRME ---
+        with tab_list:
+            with st.expander("🔍 Detaylı Filtreleme Seçenekleri", expanded=True):
+                col_search, col_seg = st.columns([2, 1])
+                search = col_search.text_input("Genel Arama", placeholder="Barkod, İsim, Raf Yeri...")
+                
+                col_kat, col_mod = st.columns(2)
+                kat_list = df_stok['Kategori'].unique().tolist() if 'Kategori' in df_stok.columns else []
+                sel_kat = col_kat.multiselect("Kategori Filtrele", kat_list)
+                
+                mod_list = df_stok['ModelUyumluluk'].unique().tolist() if 'ModelUyumluluk' in df_stok.columns else []
+                sel_mod = col_mod.multiselect("Araç Modeli Filtrele", mod_list)
+                
+                seg_list = df_stok['Segment'].unique().tolist() if 'Segment' in df_stok.columns else []
+                sel_seg = col_seg.multiselect("Segment", seg_list)
+            
+            view = df_stok.copy()
+            if search: view = view[view.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
+            if sel_kat: view = view[view['Kategori'].isin(sel_kat)]
+            if sel_mod: view = view[view['ModelUyumluluk'].isin(sel_mod)]
+            if sel_seg: view = view[view['Segment'].isin(sel_seg)]
+            
+            view['Durum'] = view.apply(lambda x: "⚠️ KRİTİK" if x['MevcutStok'] <= x['KritikLimit'] else "✅ OK", axis=1)
+            
+            st.dataframe(view, use_container_width=True, height=500)
+            st.markdown("### 📥 Listeyi Dışarı Aktar")
+            indirme_butonlari(view, "filtrelenmis_stok_listesi")
+
+        # --- TAB 2: TEKİL ÜRÜN EKLEME VE DÜZENLEME ---
+        with tab_ekle:
+            st.info("Ürün bilgilerini buradan detaylıca yönetebilirsiniz.")
+            
+            mod = st.radio("İşlem Modu Seçiniz:", ["🆕 Yeni Ürün Ekle", "✏️ Mevcut Ürünü Düzenle"], horizontal=True)
+            st.divider()
+            
+            # Varsayılan Değerler
+            def_kod, def_ad, def_raf = "", "", ""
+            def_stok, def_alis, def_satis = 0, 0.0, 0.0
+            def_kat, def_mod, def_seg = "Genel", "Genel", "C"
+            def_limit = 5
+            
+            if "Düzenle" in mod:
+                secilen_urun_adi = st.selectbox("Düzenlenecek Ürünü Listeden Seçiniz:", df_stok['UrunAdi'].unique())
+                if secilen_urun_adi:
+                    rec = df_stok[df_stok['UrunAdi'] == secilen_urun_adi].iloc[0]
+                    def_kod = rec['StokKodu']
+                    def_ad = rec['UrunAdi']
+                    def_raf = rec['RafYeri']
+                    def_stok = int(rec['MevcutStok'])
+                    def_alis = float(rec['PacalMaliyet']) if rec['PacalMaliyet'] > 0 else float(rec.get('SonAlisFiyati', 0))
+                    def_satis = float(rec['SatisFiyati'])
+                    def_kat = rec['Kategori'] if rec['Kategori'] else "Genel"
+                    def_mod = rec['ModelUyumluluk'] if rec['ModelUyumluluk'] else "Genel"
+                    def_seg = rec['Segment'] if rec['Segment'] else "C"
+                    def_limit = int(rec['KritikLimit']) if rec['KritikLimit'] else 5
+            
+            with st.form("urun_form"):
+                c1, c2 = st.columns(2)
+                kod = c1.text_input("Stok Kodu / Barkod", value=def_kod)
+                ad = c2.text_input("Ürün Adı", value=def_ad)
+                
+                c3, c4, c5 = st.columns(3)
+                kat = c3.text_input("Kategori", value=def_kat, help="Örn: Filtre, Fren, Motor")
+                model = c4.text_input("Uyumlu Model", value=def_mod, help="Örn: Clio 4, Megane 2")
+                raf = c5.text_input("Raf Yeri", value=def_raf)
+                
+                c6, c7, c8 = st.columns(3)
+                alis = c6.number_input("Alış Fiyatı (Maliyet)", min_value=0.0, value=def_alis, format="%.2f")
+                satis = c7.number_input("Satış Fiyatı (KDV Dahil)", min_value=0.0, value=def_satis, format="%.2f")
+                stok = c8.number_input("Mevcut Stok Adedi", min_value=0, value=def_stok)
+                
+                c9, c10 = st.columns(2)
+                seg = c9.selectbox("Segment", ["A", "B", "C", "D", "E", "M"], index=["A", "B", "C", "D", "E", "M"].index(def_seg) if def_seg in ["A", "B", "C", "D", "E", "M"] else 2)
+                limit = c10.number_input("Kritik Stok Limiti", min_value=1, value=def_limit)
+                
+                submit = st.form_submit_button("💾 KAYDET / GÜNCELLE")
+                
+                if submit:
+                    if kod and ad:
+                        with get_connection() as conn:
+                            net_satis = satis / 1.20 
+                            try:
+                                conn.execute("""
+                                    INSERT INTO stoklar (StokKodu, UrunAdi, RafYeri, SatisFiyati, SatisFiyatiNet, MevcutStok, PacalMaliyet, SonAlisFiyati, KritikLimit, Kategori, ModelUyumluluk, Segment, SonGuncelleme)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                    ON CONFLICT(StokKodu) DO UPDATE SET
+                                    UrunAdi=excluded.UrunAdi, RafYeri=excluded.RafYeri, SatisFiyati=excluded.SatisFiyati, 
+                                    SatisFiyatiNet=excluded.SatisFiyatiNet, MevcutStok=excluded.MevcutStok, PacalMaliyet=excluded.PacalMaliyet,
+                                    SonAlisFiyati=excluded.SonAlisFiyati, KritikLimit=excluded.KritikLimit, Kategori=excluded.Kategori,
+                                    ModelUyumluluk=excluded.ModelUyumluluk, Segment=excluded.Segment, SonGuncelleme=excluded.SonGuncelleme
+                                """, (kod, ad, raf, satis, net_satis, stok, alis, alis, limit, kat, model, seg, datetime.now()))
+                                conn.commit()
+                                st.success(f"✅ {ad} başarıyla kaydedildi!")
+                                time.sleep(1)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Hata oluştu: {e}")
+                    else:
+                        st.warning("Lütfen Stok Kodu ve Ürün Adı alanlarını doldurunuz.")
 
     # --- 4. RAPORLAR ---
     elif menu == "📈 Raporlar & Analiz":
