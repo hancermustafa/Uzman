@@ -25,32 +25,18 @@ st.markdown("""
 <style>
     /* --- 1. MASAÜSTÜ (PC) İÇİN ÖZEL KURALLAR --- */
     @media (min-width: 992px) {
-        /* Yan menüyü kapatan (<<) butonu YOK ET. Kimse kapatamasın. */
-        [data-testid="stSidebar"] button {
-            display: none !important;
-        }
-        
-        /* Menü kapalıyken çıkan (>) butonunu da YOK ET. (Zaten kapanmayacak) */
-        [data-testid="stSidebarCollapsedControl"] {
-            display: none !important;
-        }
-        
-        /* Header'ı (Üst şerit) masaüstünde gizle (Temiz ekran) */
+        [data-testid="stSidebar"] button { display: none !important; }
+        [data-testid="stSidebarCollapsedControl"] { display: none !important; }
         [data-testid="stHeader"] {
             background-color: transparent !important;
             height: 0px !important;
             pointer-events: none;
         }
-        
-        /* İçeriği biraz yukarı çek */
-        .block-container {
-            padding-top: 2rem !important;
-        }
+        .block-container { padding-top: 2rem !important; }
     }
 
     /* --- 2. MOBİL (TELEFON) İÇİN ÖZEL KURALLAR --- */
     @media (max-width: 991px) {
-        /* Mobilde Header GÖRÜNÜR ve BEYAZ olsun (Buton kaybolmasın) */
         [data-testid="stHeader"] {
             background-color: #FFFFFF !important;
             visibility: visible !important;
@@ -58,29 +44,18 @@ st.markdown("""
             z-index: 99999 !important;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        
-        /* Menü Açma Butonu (>) Rengi ve Görünürlüğü */
         [data-testid="stSidebarCollapsedControl"] {
             display: flex !important;
             color: #FFFFFF !important;
-            background-color: #004D40 !important; /* Yeşil */
-            border: 1px solid #E67E22 !important; /* Turuncu */
+            background-color: #004D40 !important;
+            border: 1px solid #E67E22 !important;
             border-radius: 5px;
             margin-top: 5px;
         }
-        
-        /* Mobilde menü kapatma butonu (X) kalsın */
-        [data-testid="stSidebar"] button {
-            display: block !important;
-            color: #333333 !important;
-        }
+        [data-testid="stSidebar"] button { display: block !important; color: #333333 !important; }
     }
 
-    /* --- 3. GİRİŞ EKRANI TİTREMESİNİ (FLICKER) ÖNLEME --- */
-    /* Giriş yapılmamışsa sidebar'ı komple gizle (Python ile kontrol edilecek) */
-    /* Not: Aşağıdaki Python check_password fonksiyonu bunu yönetecek */
-
-    /* --- 4. GEREKSİZLERİ TEMİZLEME (MANAGE APP, FOOTER VB.) --- */
+    /* --- 3. GEREKSİZLERİ TEMİZLEME --- */
     [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stDecoration"] { display: none !important; }
     [data-testid="stStatusWidget"] { display: none !important; }
@@ -89,24 +64,21 @@ st.markdown("""
     footer { display: none !important; }
     div[class*="viewerBadge"] { display: none !important; }
 
-    /* --- 5. SOL MENÜ TASARIMI (UZMAN YEŞİLİ) --- */
+    /* --- 4. SOL MENÜ TASARIMI --- */
     [data-testid="stSidebar"] {
         background-color: #004D40;
         background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
         border-right: 4px solid #E67E22;
     }
     [data-testid="stSidebar"] * { color: white !important; }
-    
-    /* Logo Kutusu */
     [data-testid="stSidebar"] > div:first-child img {
         background-color: #ffffff; padding: 15px; border-radius: 15px; 
         margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
     }
 
-    /* --- 6. GENEL ELEMENTLER --- */
+    /* --- 5. GENEL ELEMENTLER --- */
     [data-testid="stDataFrame"] th { background-color: #004D40 !important; color: white !important; }
     
-    /* Kartlar */
     div[data-testid="stMetric"] {
         background-color: #FFFFFF !important; border: 1px solid #E0E0E0 !important;
         border-radius: 10px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -115,14 +87,12 @@ st.markdown("""
     div[data-testid="stMetricLabel"] p { color: #555 !important; font-weight: bold; }
     div[data-testid="stMetricValue"] div { color: #000 !important; }
 
-    /* Butonlar */
     .stButton > button {
         background-color: #E67E22 !important; color: white !important;
         border: none; border-radius: 8px; font-weight: bold;
     }
     .stButton > button:hover { background-color: #D35400 !important; }
 
-    /* Fiş Kutusu */
     .fiş-kutusu {
         background-color: #E3F2FD; padding: 20px; border-radius: 12px; 
         border: 2px solid #1565C0; text-align: center; margin: 20px 0;
@@ -169,7 +139,6 @@ def init_db():
 
 init_db()
 
-# --- Logo ---
 def show_logo():
     if os.path.exists("Uzman.png"):
         st.sidebar.image("Uzman.png", use_container_width=True)
@@ -178,7 +147,6 @@ def show_logo():
     else:
         st.sidebar.markdown("<h2 style='color:white; text-align:center; background-color:rgba(255,255,255,0.1); padding:10px; border-radius:10px;'>🚘 UZMAN OTO</h2>", unsafe_allow_html=True)
 
-# --- Excel & PDF ---
 def process_excel_import(uploaded_file):
     try:
         if uploaded_file.name.endswith('.csv'): df = pd.read_csv(uploaded_file)
@@ -204,6 +172,7 @@ def process_excel_import(uploaded_file):
             kod = str(row.get('Parça Kodu', '')).strip()
             if not kod: continue
             
+            # NOT: Artık PacalMaliyet yerine SonAlisFiyati'na odaklanıyoruz
             vals = {
                 'ad': str(row.get('Parça Adı', '')).strip(), 'kat': str(row.get('Parça Aile', 'Genel')),
                 'mod': str(row.get('Parça Tip Adı', '')), 'raf': str(row.get('RafYeri', '')),
@@ -286,9 +255,7 @@ def check_password():
         st.session_state["logged_in"] = False
 
     if not st.session_state["logged_in"]:
-        # GİRİŞ YAPILMADIYSA: MENÜYÜ KOMPLE GİZLE
         st.markdown("""<style>[data-testid="stSidebar"] {display: none;}</style>""", unsafe_allow_html=True)
-        
         col1, col2, col3 = st.columns([1,2,1])
         with col2:
             st.markdown("<br><br>", unsafe_allow_html=True)
@@ -319,7 +286,7 @@ def check_password():
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v4.0")
+    st.sidebar.caption("Yönetim Paneli v4.01")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
@@ -349,13 +316,18 @@ if check_password():
         st.markdown("---")
         
         if not df_stok.empty:
-            stok_maliyet_net = (df_stok['MevcutStok'] * df_stok['PacalMaliyet']).sum()
+            # DÜZELTME: Paçal Maliyet yerine SonAlisFiyati (Son Alış) kullanıyoruz
+            # Eğer SonAlisFiyati yoksa veya 0 ise, yedeği PacalMaliyet olsun
+            maliyet_baz = df_stok['SonAlisFiyati'] if 'SonAlisFiyati' in df_stok.columns else df_stok['PacalMaliyet']
+            
+            stok_maliyet_net = (df_stok['MevcutStok'] * maliyet_baz).sum()
             satis_degeri_net = (df_stok['MevcutStok'] * (df_stok['SatisFiyatiNet'] if 'SatisFiyatiNet' in df_stok.columns else df_stok['SatisFiyati']/1.20)).sum()
             tahmini_kar = satis_degeri_net - stok_maliyet_net
             kritik = len(df_stok[df_stok['MevcutStok'] <= df_stok['KritikLimit']])
             
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("💰 Stok Maliyeti (NET)", f"{stok_maliyet_net:,.0f} TL", "Paçal Maliyet")
+            # Etiket "Paçal Maliyet" yerine "Son Alış Maliyeti" oldu
+            c1.metric("💰 Stok Maliyeti (NET)", f"{stok_maliyet_net:,.0f} TL", "Son Alış Fiyatından")
             c2.metric("💵 Satış Değeri (NET)", f"{satis_degeri_net:,.0f} TL", "KDV Hariç Fiyat")
             c3.metric("📈 Tahmini Brüt Kâr", f"{tahmini_kar:,.0f} TL", "Potansiyel Kazanç")
             c4.metric("⚠️ Kritik Stok", kritik, "Acil", delta_color="inverse")
@@ -412,7 +384,9 @@ if check_password():
             urun = st.selectbox("Ürün Seçiniz", df_stok['UrunAdi'].unique())
             if urun:
                 rec = df_stok[df_stok['UrunAdi']==urun].iloc[0]
-                st.info(f"📍 Raf: **{rec['RafYeri']}** | 📦 Stok: **{rec['MevcutStok']}** | 📉 Alış: **{rec['PacalMaliyet']:.2f} TL** | 📈 Satış: **{rec['SatisFiyati']:.2f} TL**")
+                # DÜZELTME: Buradaki Alış Fiyatı da Son Alış Fiyatı oldu
+                alis_goster = rec['SonAlisFiyati'] if rec['SonAlisFiyati'] > 0 else rec['PacalMaliyet']
+                st.info(f"📍 Raf: **{rec['RafYeri']}** | 📦 Stok: **{rec['MevcutStok']}** | 📉 Son Alış: **{alis_goster:.2f} TL** | 📈 Satış: **{rec['SatisFiyati']:.2f} TL**")
                 
                 c_qty, c_price, c_kdv, c_btn = st.columns([1, 1, 1, 1])
                 miktar = c_qty.number_input("Adet", 1, 1000, 1)
@@ -499,6 +473,7 @@ if check_password():
             
             view['Durum'] = view.apply(lambda x: "⚠️ KRİTİK" if x['MevcutStok'] <= x['KritikLimit'] else "✅ OK", axis=1)
             
+            # GÖRÜNTÜLENECEK SÜTUNLARDA MALİYETİ DE EKLEYEBİLİRİZ AMA SATIŞ ODAKLI OLSUN
             st.dataframe(view, use_container_width=True, height=500)
             st.markdown("### 📥 Listeyi Dışarı Aktar")
             indirme_butonlari(view, "filtrelenmis_stok_listesi")
@@ -521,7 +496,8 @@ if check_password():
                     def_ad = rec['UrunAdi']
                     def_raf = rec['RafYeri']
                     def_stok = int(rec['MevcutStok'])
-                    def_alis = float(rec['PacalMaliyet']) if rec['PacalMaliyet'] > 0 else float(rec.get('SonAlisFiyati', 0))
+                    # DÜZELTME: Düzenleme ekranında da Pacal yerine SonAlisFiyati öncelikli
+                    def_alis = float(rec['SonAlisFiyati']) if rec['SonAlisFiyati'] > 0 else float(rec.get('PacalMaliyet', 0))
                     def_satis = float(rec['SatisFiyati'])
                     def_kat = rec['Kategori'] if rec['Kategori'] else "Genel"
                     def_mod = rec['ModelUyumluluk'] if rec['ModelUyumluluk'] else "Genel"
@@ -537,7 +513,8 @@ if check_password():
                 model = c4.text_input("Uyumlu Model", value=def_mod, help="Örn: Clio 4, Megane 2")
                 raf = c5.text_input("Raf Yeri", value=def_raf)
                 c6, c7, c8 = st.columns(3)
-                alis = c6.number_input("Alış Fiyatı (Maliyet)", min_value=0.0, value=def_alis, format="%.2f")
+                # DÜZELTME: Label değişti
+                alis = c6.number_input("Alış Fiyatı (Son Alış)", min_value=0.0, value=def_alis, format="%.2f")
                 satis = c7.number_input("Satış Fiyatı (KDV Dahil)", min_value=0.0, value=def_satis, format="%.2f")
                 stok = c8.number_input("Mevcut Stok Adedi", min_value=0, value=def_stok)
                 c9, c10 = st.columns(2)
@@ -549,6 +526,8 @@ if check_password():
                         with get_connection() as conn:
                             net_satis = satis / 1.20 
                             try:
+                                # Not: PacalMaliyet alanına da aynısını yazıyoruz ki sistem tutarlı olsun, 
+                                # ama SonAlisFiyati alanını asıl veri kabul ediyoruz.
                                 conn.execute("""
                                     INSERT INTO stoklar (StokKodu, UrunAdi, RafYeri, SatisFiyati, SatisFiyatiNet, MevcutStok, PacalMaliyet, SonAlisFiyati, KritikLimit, Kategori, ModelUyumluluk, Segment, SonGuncelleme)
                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -584,11 +563,12 @@ if check_password():
                 indirme_butonlari(abc, "abc_analizi")
             else: st.info("Satış verisi yok.")
         with t3:
-            st.subheader("💸 Ürün Bazlı Kârlılık")
+            st.subheader("💸 Ürün Bazlı Kârlılık (Son Alış Fiyatına Göre)")
             if not df_har.empty:
                 kar = df_har[df_har['IslemTipi'].str.contains('Çıkış')].groupby('UrunAdi').agg({'Miktar':'sum', 'GenelToplam':'sum'}).reset_index()
-                kar = kar.merge(df_stok[['UrunAdi','PacalMaliyet']], on='UrunAdi', how='left')
-                kar['NetKar'] = kar['GenelToplam'] - (kar['Miktar']*kar['PacalMaliyet'])
+                # DÜZELTME: PacalMaliyet yerine SonAlisFiyati kullanıldı
+                kar = kar.merge(df_stok[['UrunAdi','SonAlisFiyati']], on='UrunAdi', how='left')
+                kar['NetKar'] = kar['GenelToplam'] - (kar['Miktar']*kar['SonAlisFiyati'])
                 st.dataframe(kar, use_container_width=True)
                 indirme_butonlari(kar, "karlilik_raporu")
         with t4:
@@ -597,7 +577,9 @@ if check_password():
             st.dataframe(olu, use_container_width=True)
             indirme_butonlari(olu, "olu_stok")
         with t5:
-            st.subheader("📋 Hareketler Listesi")
+            # DÜZELTME: Simge eklendi
+            st.subheader("📒 Hareket Dökümü (Detaylı)")
+            # DÜZELTME: Zaten hareketler tablosunda o anki BirimFiyat kayıtlı olduğu için Paçal karışmaz.
             df_log = df_har.sort_values('id', ascending=False)
             st.dataframe(df_log, use_container_width=True)
             indirme_butonlari(df_log, "hareket_dokumu")
