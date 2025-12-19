@@ -290,7 +290,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v2.4 (Fix)")
+    st.sidebar.caption("Yönetim Paneli v2.5")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
@@ -304,9 +304,7 @@ if check_password():
     # -------------------------------------------------------------
     df_stok = pd.read_sql("SELECT * FROM stoklar", conn)
     
-    # Veritabanından gelen kritik sayısal sütunları zorla sayıya çeviriyoruz.
-    # Eğer içinde "abc" veya boşluk varsa, onu 0 yapar ve çökmesini engeller.
-    for col in ['MevcutStok', 'PacalMaliyet', 'SatisFiyati', 'SatisFiyatiNet', 'KritikLimit']:
+    for col in ['MevcutStok', 'PacalMaliyet', 'SatisFiyati', 'SatisFiyatiNet', 'KritikLimit', 'SonAlisFiyati']:
         if col in df_stok.columns:
             df_stok[col] = pd.to_numeric(df_stok[col], errors='coerce').fillna(0)
     
@@ -321,7 +319,6 @@ if check_password():
         st.markdown("---")
         
         if not df_stok.empty:
-            # Artık bu satırda çökme ihtimali %0 çünkü yukarıda temizledik.
             stok_maliyet_net = (df_stok['MevcutStok'] * df_stok['PacalMaliyet']).sum()
             
             if 'SatisFiyatiNet' in df_stok.columns:
@@ -431,7 +428,9 @@ if check_password():
 
     # --- 3. HAREKET GİRİŞİ ---
     elif menu == "📝 Hareket Girişi":
-        st.markdown("## ⚡ Satış Ekranı")
+        # 1. BAŞLIK DEĞİŞİKLİĞİ
+        st.markdown("## ⚡ Stok Giriş Çıkış")
+        
         c_l, c_r = st.columns([1, 2])
         with c_l:
             st.info("İşlem Bilgileri")
@@ -446,21 +445,30 @@ if check_password():
             urun = st.selectbox("Ürün Seç", df_stok['UrunAdi'].unique())
             if urun:
                 rec = df_stok[df_stok['UrunAdi']==urun].iloc[0]
-                st.caption(f"Raf: {rec['RafYeri']} | Stok: {rec['MevcutStok']} | Liste Fiyatı: {rec['SatisFiyati']} TL")
+                
+                # 2. DETAYLI VE ANLAŞILIR BİLGİ SATIRI (ALIŞ VE SATIŞ FİYATI EKLENDİ)
+                st.caption(f"📍 Raf: {rec['RafYeri']} | 📦 Stok: {rec['MevcutStok']} Adet | 📉 Alış: {rec['SonAlisFiyati']:.2f} TL | 📈 Satış: {rec['SatisFiyati']:.2f} TL")
                 st.divider()
                 
                 k1, k2, k3 = st.columns(3)
                 miktar = k1.number_input("Adet", 1, 1000, 1)
                 fiyat = k2.number_input("Birim Fiyat", value=float(rec['SatisFiyati']))
+                
+                # 3. KDV MANTIĞI TERSİNE ÇEVRİLDİ (İSTEK ÜZERİNE)
+                # "Dahil" seçilirse: Üstüne ekle (Eskiden Hariç'in yaptığı iş)
+                # "Hariç" seçilirse: Ekleme yapma (Eskiden Dahil'in yaptığı iş)
                 kdv_tip = k3.radio("KDV", ["Dahil", "Hariç"], horizontal=True)
                 kdv_oran = st.selectbox("Oran", [0,1,8,10,18,20], index=5)
                 
                 ham = miktar * fiyat
-                if kdv_tip == "Dahil":
+                
+                # Mantık değişimi: Buton "Hariç" ise, KDV'yi fiyata dahil varsay (ekleme yapma).
+                # Buton "Dahil" ise, KDV'yi ekle. (Kullanıcı talebi: 'ters çalışsın')
+                if kdv_tip == "Hariç":
                     toplam = ham
                     matrah = toplam / (1 + kdv_oran/100)
                     kdv = toplam - matrah
-                else:
+                else: # Dahil seçilirse ekle
                     matrah = ham
                     kdv = matrah * (kdv_oran/100)
                     toplam = matrah + kdv
