@@ -290,7 +290,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v2.5")
+    st.sidebar.caption("Yönetim Paneli v2.6 (Sepet)")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
@@ -300,10 +300,9 @@ if check_password():
 
     conn = get_connection()
     # -------------------------------------------------------------
-    # 🚨 KRİTİK HATA DÜZELTMESİ (DATA TİPİ ZORLAMA KODU)
+    # 🚨 DATA TİPİ ZORLAMA KODU (CRASH FIX)
     # -------------------------------------------------------------
     df_stok = pd.read_sql("SELECT * FROM stoklar", conn)
-    
     for col in ['MevcutStok', 'PacalMaliyet', 'SatisFiyati', 'SatisFiyatiNet', 'KritikLimit', 'SonAlisFiyati']:
         if col in df_stok.columns:
             df_stok[col] = pd.to_numeric(df_stok[col], errors='coerce').fillna(0)
@@ -426,64 +425,104 @@ if check_password():
                         except Exception as e:
                             st.error(f"Hata: {e}")
 
-    # --- 3. HAREKET GİRİŞİ ---
+    # --- 3. HAREKET GİRİŞİ (SEPET SİSTEMİ) ---
     elif menu == "📝 Hareket Girişi":
-        # 1. BAŞLIK DEĞİŞİKLİĞİ
-        st.markdown("## ⚡ Stok Giriş Çıkış")
+        st.markdown("## ⚡ Stok Giriş Çıkış (Fatura Modu)")
         
-        c_l, c_r = st.columns([1, 2])
-        with c_l:
-            st.info("İşlem Bilgileri")
-            islem = st.selectbox("Tip", ["Stok Çıkış (Satış)", "Stok Giriş (İade)"])
+        # Sepet Durumu Başlatma
+        if 'sepet' not in st.session_state:
+            st.session_state['sepet'] = []
+
+        # 1. Üst Bilgiler (Fatura Geneli)
+        with st.container():
+            c1, c2, c3, c4 = st.columns(4)
+            islem = c1.selectbox("İşlem Tipi", ["Stok Çıkış (Satış)", "Stok Giriş (İade/Alım)"])
+            evrak = c2.text_input("Evrak / Fatura No")
+            
             p_list = df_tanim['Personel'].dropna().unique().tolist()
-            personel = st.selectbox("Personel", p_list if p_list else ["Tanımsız"])
-            cari = st.selectbox("Cari", df_tanim['Cari'].dropna().unique().tolist() or ["Genel"])
-            evrak = st.text_input("Evrak No")
+            personel = c3.selectbox("Personel", p_list if p_list else ["Tanımsız"])
+            
+            cari = c4.selectbox("Cari Hesap", df_tanim['Cari'].dropna().unique().tolist() or ["Genel"])
+
+        st.markdown("---")
         
-        with c_r:
-            st.warning("Ürün & Hesap")
-            urun = st.selectbox("Ürün Seç", df_stok['UrunAdi'].unique())
+        # 2. Ürün Ekleme Alanı
+        col_sol, col_sag = st.columns([2, 1])
+        
+        with col_sol:
+            urun = st.selectbox("Ürün Seçiniz", df_stok['UrunAdi'].unique())
             if urun:
                 rec = df_stok[df_stok['UrunAdi']==urun].iloc[0]
+                st.info(f"📍 Raf: **{rec['RafYeri']}** | 📦 Stok: **{rec['MevcutStok']}** | 📉 Alış: **{rec['SonAlisFiyati']:.2f} TL** | 📈 Satış: **{rec['SatisFiyati']:.2f} TL**")
                 
-                # 2. DETAYLI VE ANLAŞILIR BİLGİ SATIRI (ALIŞ VE SATIŞ FİYATI EKLENDİ)
-                st.caption(f"📍 Raf: {rec['RafYeri']} | 📦 Stok: {rec['MevcutStok']} Adet | 📉 Alış: {rec['SonAlisFiyati']:.2f} TL | 📈 Satış: {rec['SatisFiyati']:.2f} TL")
-                st.divider()
+                c_qty, c_price, c_kdv, c_btn = st.columns([1, 1, 1, 1])
+                miktar = c_qty.number_input("Adet", 1, 1000, 1)
+                fiyat = c_price.number_input("Birim Fiyat", value=float(rec['SatisFiyati']))
                 
-                k1, k2, k3 = st.columns(3)
-                miktar = k1.number_input("Adet", 1, 1000, 1)
-                fiyat = k2.number_input("Birim Fiyat", value=float(rec['SatisFiyati']))
-                
-                # 3. KDV MANTIĞI TERSİNE ÇEVRİLDİ (İSTEK ÜZERİNE)
-                # "Dahil" seçilirse: Üstüne ekle (Eskiden Hariç'in yaptığı iş)
-                # "Hariç" seçilirse: Ekleme yapma (Eskiden Dahil'in yaptığı iş)
-                kdv_tip = k3.radio("KDV", ["Dahil", "Hariç"], horizontal=True)
+                # Ters KDV Mantığı
+                kdv_tip = c_kdv.radio("KDV", ["Dahil", "Hariç"], horizontal=True)
                 kdv_oran = st.selectbox("Oran", [0,1,8,10,18,20], index=5)
                 
-                ham = miktar * fiyat
+                if c_btn.button("➕ Listeye Ekle", use_container_width=True):
+                    # Hesaplamalar
+                    ham = miktar * fiyat
+                    if kdv_tip == "Hariç":
+                        toplam = ham
+                        matrah = toplam / (1 + kdv_oran/100)
+                        kdv_tutari = toplam - matrah
+                    else: # Dahil seçilirse üstüne ekle
+                        matrah = ham
+                        kdv_tutari = matrah * (kdv_oran/100)
+                        toplam = matrah + kdv_tutari
+                    
+                    # Sepete Ekle
+                    item = {
+                        "UrunAdi": urun,
+                        "Miktar": miktar,
+                        "BirimFiyat": fiyat,
+                        "KDVOrani": kdv_oran,
+                        "KDVTutari": kdv_tutari,
+                        "Toplam": toplam,
+                        "StokKodu": rec['StokKodu'], # Stok düşmek için lazım
+                        "MevcutStok": rec['MevcutStok']
+                    }
+                    st.session_state['sepet'].append(item)
+                    st.success(f"{urun} listeye eklendi.")
+
+        # 3. Sepet Listesi ve Onay
+        with col_sag:
+            st.markdown("### 🛒 İşlem Listesi")
+            if st.session_state['sepet']:
+                df_sepet = pd.DataFrame(st.session_state['sepet'])
+                st.dataframe(df_sepet[['UrunAdi', 'Miktar', 'Toplam']], use_container_width=True, hide_index=True)
                 
-                # Mantık değişimi: Buton "Hariç" ise, KDV'yi fiyata dahil varsay (ekleme yapma).
-                # Buton "Dahil" ise, KDV'yi ekle. (Kullanıcı talebi: 'ters çalışsın')
-                if kdv_tip == "Hariç":
-                    toplam = ham
-                    matrah = toplam / (1 + kdv_oran/100)
-                    kdv = toplam - matrah
-                else: # Dahil seçilirse ekle
-                    matrah = ham
-                    kdv = matrah * (kdv_oran/100)
-                    toplam = matrah + kdv
+                genel_toplam = df_sepet['Toplam'].sum()
+                st.markdown(f"<h2 style='text-align:right; color:#E67E22;'>TOPLAM: {genel_toplam:,.2f} TL</h2>", unsafe_allow_html=True)
                 
-                st.markdown(f"""<div class="fiş-kutusu"><div class="fiş-baslik">TOPLAM TUTAR</div><div class="fiş-tutar">{toplam:,.2f} TL</div><div class="fiş-detay">Net: {matrah:,.2f} TL | KDV: {kdv:,.2f} TL</div></div>""", unsafe_allow_html=True)
-                
-                if st.button("✅ KAYDET"):
-                    with get_connection() as conn:
-                        conn.execute("INSERT INTO hareketler (Tarih, EvrakNo, IslemTipi, UrunAdi, Cari, Personel, Miktar, BirimFiyat, KDVOrani, KDVTutari, GenelToplam, IslemZamani) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                                     (datetime.now(), evrak, islem, urun, cari, personel, miktar, fiyat, kdv_oran, kdv, toplam, datetime.now()))
-                        mevcut = int(rec['MevcutStok'])
-                        yeni = mevcut - miktar if "Çıkış" in islem else mevcut + miktar
-                        conn.execute("UPDATE stoklar SET MevcutStok=? WHERE StokKodu=?", (yeni, rec['StokKodu']))
-                        conn.commit()
-                    st.success("İşlem Tamam!"); time.sleep(1); st.rerun()
+                if st.button("✅ FİŞİ TAMAMLA VE KAYDET", type="primary", use_container_width=True):
+                    if not evrak:
+                        st.error("Lütfen Evrak No giriniz!")
+                    else:
+                        with get_connection() as conn:
+                            for item in st.session_state['sepet']:
+                                # Hareketi Kaydet
+                                conn.execute("INSERT INTO hareketler (Tarih, EvrakNo, IslemTipi, UrunAdi, Cari, Personel, Miktar, BirimFiyat, KDVOrani, KDVTutari, GenelToplam, IslemZamani) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                                             (datetime.now(), evrak, islem, item['UrunAdi'], cari, personel, item['Miktar'], item['BirimFiyat'], item['KDVOrani'], item['KDVTutari'], item['Toplam'], datetime.now()))
+                                
+                                # Stoğu Güncelle
+                                cur_stok = int(item['MevcutStok'])
+                                yeni_stok = cur_stok - item['Miktar'] if "Çıkış" in islem else cur_stok + item['Miktar']
+                                conn.execute("UPDATE stoklar SET MevcutStok=? WHERE StokKodu=?", (yeni_stok, item['StokKodu']))
+                            
+                            conn.commit()
+                        
+                        st.session_state['sepet'] = [] # Sepeti boşalt
+                        st.balloons()
+                        st.success("Fiş başarıyla kaydedildi!")
+                        time.sleep(1.5)
+                        st.rerun()
+            else:
+                st.info("Liste boş.")
 
     # --- 4. RAPORLAR ---
     elif menu == "📈 Raporlar & Analiz":
