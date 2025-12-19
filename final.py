@@ -19,32 +19,38 @@ st.set_page_config(
 )
 
 # =========================================================
-# 2. CSS SİHİRLERİ (KARARLI VE SABİT YAPI)
+# 2. CSS SİHİRLERİ (V4.0 - KİLİTLİ MENÜ MİMARİSİ)
 # =========================================================
-# Bu CSS bloğu, menü davranışını cihazın genişliğine göre ayarlar.
 st.markdown("""
 <style>
-    /* --- 1. MASAÜSTÜ İÇİN SABİT MENÜ AYARI (PC) --- */
+    /* --- 1. MASAÜSTÜ (PC) İÇİN ÖZEL KURALLAR --- */
     @media (min-width: 992px) {
-        /* Masaüstünde 'Menüyü Kapat' (<<) butonunu tamamen gizle */
+        /* Yan menüyü kapatan (<<) butonu YOK ET. Kimse kapatamasın. */
+        [data-testid="stSidebar"] button {
+            display: none !important;
+        }
+        
+        /* Menü kapalıyken çıkan (>) butonunu da YOK ET. (Zaten kapanmayacak) */
         [data-testid="stSidebarCollapsedControl"] {
             display: none !important;
         }
-        /* Header'ı masaüstünde gizle ki ekran temiz olsun */
+        
+        /* Header'ı (Üst şerit) masaüstünde gizle (Temiz ekran) */
         [data-testid="stHeader"] {
-            background-color: rgba(0,0,0,0) !important;
+            background-color: transparent !important;
             height: 0px !important;
             pointer-events: none;
         }
-        /* Sayfa içeriğini yukarı al */
+        
+        /* İçeriği biraz yukarı çek */
         .block-container {
             padding-top: 2rem !important;
         }
     }
 
-    /* --- 2. MOBİL İÇİN AYARLAR (TELEFON/TABLET) --- */
+    /* --- 2. MOBİL (TELEFON) İÇİN ÖZEL KURALLAR --- */
     @media (max-width: 991px) {
-        /* Mobilde Header GÖRÜNÜR ve BEYAZ olsun (Buton kaybolmasın diye) */
+        /* Mobilde Header GÖRÜNÜR ve BEYAZ olsun (Buton kaybolmasın) */
         [data-testid="stHeader"] {
             background-color: #FFFFFF !important;
             visibility: visible !important;
@@ -53,28 +59,34 @@ st.markdown("""
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
-        /* Menü Açma Butonunu Belirgin Yap */
+        /* Menü Açma Butonu (>) Rengi ve Görünürlüğü */
         [data-testid="stSidebarCollapsedControl"] {
             display: flex !important;
-            color: #004D40 !important; /* İkon Yeşil */
-            background-color: transparent !important;
-            border: 2px solid #E67E22 !important; /* Turuncu Çerçeve */
+            color: #FFFFFF !important;
+            background-color: #004D40 !important; /* Yeşil */
+            border: 1px solid #E67E22 !important; /* Turuncu */
             border-radius: 5px;
             margin-top: 5px;
+        }
+        
+        /* Mobilde menü kapatma butonu (X) kalsın */
+        [data-testid="stSidebar"] button {
+            display: block !important;
+            color: #333333 !important;
         }
     }
 
     /* --- 3. GİRİŞ EKRANI TİTREMESİNİ (FLICKER) ÖNLEME --- */
-    /* Eğer giriş yapılmadıysa Sidebar'ı CSS ile gizle (Python ile kontrol edilecek) */
-    /* Not: Bu kısım dinamik olarak Python içinde yönetilecek, aşağıya bakınız */
+    /* Giriş yapılmamışsa sidebar'ı komple gizle (Python ile kontrol edilecek) */
+    /* Not: Aşağıdaki Python check_password fonksiyonu bunu yönetecek */
 
-    /* --- 4. GEREKSİZLERİ GİZLEME (MANAGE APP, FOOTER) --- */
-    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
-    [data-testid="stDecoration"] { visibility: hidden !important; display: none !important; }
-    [data-testid="stStatusWidget"] { visibility: hidden !important; display: none !important; }
+    /* --- 4. GEREKSİZLERİ TEMİZLEME (MANAGE APP, FOOTER VB.) --- */
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+    [data-testid="stStatusWidget"] { display: none !important; }
     .stDeployButton { display: none !important; }
-    #MainMenu { visibility: hidden !important; display: none !important; }
-    footer { visibility: hidden !important; display: none !important; }
+    #MainMenu { display: none !important; }
+    footer { display: none !important; }
     div[class*="viewerBadge"] { display: none !important; }
 
     /* --- 5. SOL MENÜ TASARIMI (UZMAN YEŞİLİ) --- */
@@ -267,20 +279,15 @@ def backup_db():
     except: return None
 
 # =========================================================
-# 4. GİRİŞ KONTROLÜ (TİTREME ENGELLEYİCİ MANTIK)
+# 4. GİRİŞ KONTROLÜ
 # =========================================================
 def check_password():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
 
     if not st.session_state["logged_in"]:
-        # GİRİŞ YAPILMADIYSA: MENÜYÜ GİZLE
-        st.markdown("""
-        <style>
-            [data-testid="stSidebar"] { display: none !important; }
-            [data-testid="stSidebarCollapsedControl"] { display: none !important; }
-        </style>
-        """, unsafe_allow_html=True)
+        # GİRİŞ YAPILMADIYSA: MENÜYÜ KOMPLE GİZLE
+        st.markdown("""<style>[data-testid="stSidebar"] {display: none;}</style>""", unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1,2,1])
         with col2:
@@ -304,10 +311,7 @@ def check_password():
                             st.rerun()
                         else: st.error("Hatalı Giriş!")
         return False
-    else:
-        # GİRİŞ YAPILDIYSA: MENÜYÜ GÖSTER
-        # Sadece masaüstünde menüyü zorla açık tutan CSS burada devreye giriyor.
-        return True
+    return True
 
 # =========================================================
 # 5. UYGULAMA AKIŞI
@@ -315,7 +319,7 @@ def check_password():
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v3.9")
+    st.sidebar.caption("Yönetim Paneli v4.0")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
