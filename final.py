@@ -42,14 +42,13 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- YENİ: SOL MENÜ LOGO DÜZELTMESİ --- */
-    /* Logonun arkasına beyaz, yuvarlak köşeli bir kutu ekler */
+    /* SOL MENÜ LOGO DÜZELTMESİ */
     [data-testid="stSidebar"] > div:first-child img {
         background-color: #ffffff;
-        padding: 15px; /* Logonun etrafında boşluk */
-        border-radius: 15px; /* Köşeleri yuvarlat */
-        margin-bottom: 20px; /* Altına boşluk bırak */
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Hafif gölge ver */
+        padding: 15px; 
+        border-radius: 15px; 
+        margin-bottom: 20px; 
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
     }
 
     /* 3. TABLO BAŞLIKLARI */
@@ -148,13 +147,11 @@ init_db()
 # 3. YARDIMCI FONKSİYONLAR
 # =========================================================
 def show_logo():
-    # Logo varsa gösterir
     if os.path.exists("Uzman.png"):
         st.sidebar.image("Uzman.png", use_container_width=True)
     elif os.path.exists("uzman.png"):
         st.sidebar.image("uzman.png", use_container_width=True)
     else:
-        # Logo yoksa şık bir yazı
         st.sidebar.markdown("<h2 style='color:white; text-align:center; background-color:rgba(255,255,255,0.1); padding:10px; border-radius:10px;'>🚘 UZMAN OTO</h2>", unsafe_allow_html=True)
 
 def check_password():
@@ -293,7 +290,7 @@ def indirme_butonlari(df, isim):
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli v2.3")
+    st.sidebar.caption("Yönetim Paneli v2.4 (Fix)")
     
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
@@ -302,10 +299,21 @@ if check_password():
     menu = st.sidebar.radio("MENÜ", ["📊 Dashboard", "📦 Stok Yönetimi", "📝 Hareket Girişi", "📈 Raporlar & Analiz", "⚙️ Ayarlar"])
 
     conn = get_connection()
+    # -------------------------------------------------------------
+    # 🚨 KRİTİK HATA DÜZELTMESİ (DATA TİPİ ZORLAMA KODU)
+    # -------------------------------------------------------------
     df_stok = pd.read_sql("SELECT * FROM stoklar", conn)
+    
+    # Veritabanından gelen kritik sayısal sütunları zorla sayıya çeviriyoruz.
+    # Eğer içinde "abc" veya boşluk varsa, onu 0 yapar ve çökmesini engeller.
+    for col in ['MevcutStok', 'PacalMaliyet', 'SatisFiyati', 'SatisFiyatiNet', 'KritikLimit']:
+        if col in df_stok.columns:
+            df_stok[col] = pd.to_numeric(df_stok[col], errors='coerce').fillna(0)
+    
     df_har = pd.read_sql("SELECT * FROM hareketler", conn)
     df_tanim = pd.read_sql("SELECT * FROM tanimlar", conn)
     conn.close()
+    # -------------------------------------------------------------
 
     # --- 1. DASHBOARD ---
     if menu == "📊 Dashboard":
@@ -313,7 +321,9 @@ if check_password():
         st.markdown("---")
         
         if not df_stok.empty:
+            # Artık bu satırda çökme ihtimali %0 çünkü yukarıda temizledik.
             stok_maliyet_net = (df_stok['MevcutStok'] * df_stok['PacalMaliyet']).sum()
+            
             if 'SatisFiyatiNet' in df_stok.columns:
                 satis_degeri_net = (df_stok['MevcutStok'] * df_stok['SatisFiyatiNet']).sum()
             else:
