@@ -9,7 +9,37 @@ import os
 from fpdf import FPDF
 
 # =========================================================
-# 1. AYARLAR VE TASARIM
+# 0. ZORUNLU TEMA ENJEKSİYONU (v7.0 BAZ ALINDI)
+# =========================================================
+def force_light_mode():
+    config_dir = ".streamlit"
+    config_path = os.path.join(config_dir, "config.toml")
+    
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+    
+    # Secondary Background GRİ (#F0F2F6) yapıldı (Inputlar bozulmasın diye)
+    config_content = """
+[theme]
+base="light"
+primaryColor="#E67E22"
+backgroundColor="#FFFFFF"
+secondaryBackgroundColor="#F0F2F6"
+textColor="#31333F"
+font="sans serif"
+
+[server]
+headless = true
+    """
+    
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(config_content.strip())
+
+# Kod çalışmadan önce ayarları enjekte et
+force_light_mode()
+
+# =========================================================
+# 1. SAYFA AYARLARI
 # =========================================================
 st.set_page_config(
     page_title="Uzman Otomotiv",
@@ -19,102 +49,122 @@ st.set_page_config(
 )
 
 # =========================================================
-# 2. CSS SİHİRLERİ (V5.1 - SABİT MENÜ & TEMİZ GÖRÜNÜM)
+# 2. CSS SİHİRLERİ (v7.3 - TABLO GÖRÜNÜRLÜK FIX)
 # =========================================================
 st.markdown("""
 <style>
-    /* --- 1. MASAÜSTÜ (PC) İÇİN ÖZEL KURALLAR --- */
-    @media (min-width: 992px) {
-        /* Yan menüyü kapatan (<<) butonu YOK ET */
-        [data-testid="stSidebar"] [data-testid="stSidebarHeader"] button {
-            display: none !important;
-        }
-        [data-testid="stSidebarCollapsedControl"] {
-            display: none !important;
-        }
-        /* Header'ı gizle */
-        [data-testid="stHeader"] {
-            background-color: transparent !important;
-            height: 0px !important;
-            pointer-events: none;
-        }
-        .block-container { padding-top: 2rem !important; }
+    /* --- 1. KÖK AYARLAR --- */
+    :root {
+        --primary-color: #E67E22;
+        --background-color: #FFFFFF;
+        --secondary-background-color: #F0F2F6;
+        --text-color: #000000;
+        --font: "Source Sans Pro", sans-serif;
     }
 
-    /* --- 2. MOBİL (TELEFON) İÇİN ÖZEL KURALLAR --- */
-    @media (max-width: 991px) {
-        [data-testid="stHeader"] {
-            background-color: #FFFFFF !important;
-            visibility: visible !important;
-            height: 60px !important;
-            z-index: 99999 !important;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        [data-testid="stSidebarCollapsedControl"] {
-            display: flex !important;
-            color: #FFFFFF !important;
-            background-color: #004D40 !important;
-            border: 1px solid #E67E22 !important;
-            border-radius: 5px;
-            margin-top: 5px;
-        }
+    [data-testid="stAppViewContainer"], .stApp {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
     }
-
-    /* --- 3. GEREKSİZLERİ GİZLEME --- */
-    [data-testid="stToolbar"] { display: none !important; }
-    [data-testid="stDecoration"] { display: none !important; }
-    [data-testid="stStatusWidget"] { display: none !important; }
-    .stDeployButton { display: none !important; }
-    #MainMenu { display: none !important; }
-    footer { display: none !important; }
-    div[class*="viewerBadge"] { display: none !important; }
-    div[class*="StatusWidget"] { display: none !important; }
-
-    /* --- 4. SOL MENÜ TASARIMI --- */
+    
+    /* --- 2. YAN MENÜ (KUTSAL VE DOKUNULMAZ ALAN) --- */
     [data-testid="stSidebar"] {
-        background-color: #004D40;
-        background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%);
-        border-right: 4px solid #E67E22;
+        background-color: #004D40 !important;
+        background-image: linear-gradient(180deg, #004D40 0%, #00251a 100%) !important;
+        border-right: 4px solid #E67E22 !important;
     }
-    [data-testid="stSidebar"] * { color: white !important; }
+    /* Yan menü yazıları BEYAZ */
+    [data-testid="stSidebar"] *, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span {
+        color: #FFFFFF !important;
+    }
     
-    /* Logo */
-    [data-testid="stSidebar"] > div:first-child img {
-        background-color: #ffffff; padding: 15px; border-radius: 15px; 
-        margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+    /* --- 3. MENÜ OKLARI (<< >> ÇALIŞAN HALİ) --- */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        color: #31333F !important;
+        background-color: #FFFFFF !important;
+        border: 2px solid #E67E22 !important;
+        border-radius: 5px !important;
+        z-index: 100000 !important;
     }
 
-    /* --- 5. GENEL ELEMENTLER --- */
-    [data-testid="stDataFrame"] th { background-color: #004D40 !important; color: white !important; }
-    
-    div[data-testid="stMetric"] {
-        background-color: #FFFFFF !important; border: 1px solid #E0E0E0 !important;
-        border-radius: 10px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        border-left: 5px solid #E67E22 !important;
+    /* --- 4. TABLOLAR (RAPORLARDAKİ BOŞ GÖRÜNME SORUNU ÇÖZÜMÜ) --- */
+    /* Tablo çerçevesi */
+    .stDataFrame, [data-testid="stDataFrame"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #ddd !important;
     }
-    div[data-testid="stMetricLabel"] p { color: #555 !important; font-weight: bold; }
-    div[data-testid="stMetricValue"] div { color: #000 !important; }
+    
+    /* Tablo BAŞLIKLARI (Header) - Yeşil Zemin, Beyaz Yazı */
+    [data-testid="stDataFrame"] th {
+        background-color: #004D40 !important;
+        color: #FFFFFF !important;
+    }
+    
+    /* Tablo HÜCRELERİ (Cells) - Beyaz Zemin, SİYAH Yazı */
+    /* Burası çok önemli: Streamlit'in içindeki div, span, p ne varsa hepsini siyaha boyuyoruz */
+    [data-testid="stDataFrame"] td, 
+    [data-testid="stDataFrame"] td div, 
+    [data-testid="stDataFrame"] td span, 
+    [data-testid="stDataFrame"] td p {
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Alternatif Tablo Yapısı (Glide Data Grid) için ek önlem */
+    div[data-testid="stDataFrame"] > div {
+        color: #000000 !important;
+    }
 
+    /* --- 5. LİSTELER VE INPUTLAR --- */
+    .stTextInput input, .stNumberInput input, .stSelectbox div {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        border-color: #ccc !important;
+    }
+    
+    /* Açılır Liste İçi */
+    div[data-baseweb="popover"] *, ul[data-testid="stSelectboxVirtualDropdown"] li {
+        color: #000000 !important;
+        background-color: #FFFFFF !important;
+    }
+    
+    /* --- 6. BUTONLAR --- */
     .stButton > button {
-        background-color: #E67E22 !important; color: white !important;
+        background-color: #E67E22 !important; 
+        color: #FFFFFF !important;
         border: none; border-radius: 8px; font-weight: bold;
     }
     .stButton > button:hover { background-color: #D35400 !important; }
     
-    button[kind="secondary"] {
-        background-color: #7f8c8d !important;
-        color: white !important;
+    /* Sayı artırma butonları (+ -) */
+    [data-testid="stNumberInput"] button {
+        color: #000000 !important;
+        background: transparent !important;
     }
 
-    .fiş-kutusu {
-        background-color: #E3F2FD; padding: 20px; border-radius: 12px; 
-        border: 2px solid #1565C0; text-align: center; margin: 20px 0;
-    }
-    .fiş-baslik { color: #1565C0; font-weight: bold; font-size: 1.2em; }
-    .fiş-tutar { color: #0D47A1; font-weight: 800; font-size: 2.5em; margin: 10px 0; }
-    .fiş-detay { color: #455A64; font-size: 1em; font-weight: bold;}
+    /* --- 7. DİĞER GÖRSELLER --- */
+    /* Fullscreen butonunu gizle */
+    button[title="View fullscreen"] { display: none !important; }
     
-    h1, h2, h3, p, span, div { color: #333333; }
+    /* Logo */
+    [data-testid="stSidebar"] > div:first-child img {
+        background-color: #FFFFFF; padding: 10px; border-radius: 10px; margin-bottom: 20px;
+    }
+    
+    /* Kartlar */
+    div[data-testid="stMetric"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E0E0E0 !important;
+        border-left: 5px solid #E67E22 !important;
+        color: #000000 !important;
+    }
+    div[data-testid="stMetricLabel"] p { color: #555 !important; }
+    div[data-testid="stMetricValue"] div { color: #000 !important; }
+
+    /* Genel Yazı */
+    h1, h2, h3, h4, p, span, div, label { color: inherit; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -155,11 +205,11 @@ init_db()
 
 def show_logo():
     if os.path.exists("Uzman.png"):
-        st.sidebar.image("Uzman.png", use_container_width=True)
+        st.sidebar.image("Uzman.png", width=250)
     elif os.path.exists("uzman.png"):
-        st.sidebar.image("uzman.png", use_container_width=True)
+        st.sidebar.image("uzman.png", width=250)
     else:
-        st.sidebar.markdown("<h2 style='color:white; text-align:center; background-color:rgba(255,255,255,0.1); padding:10px; border-radius:10px;'>🚘 UZMAN OTO</h2>", unsafe_allow_html=True)
+        st.sidebar.markdown("<h2 style='color:white; text-align:center;'>🚘 UZMAN OTO</h2>", unsafe_allow_html=True)
 
 def process_excel_import(uploaded_file):
     try:
@@ -276,7 +326,7 @@ def check_password():
                 st.image("Uzman.png", width=200)
             else:
                 st.markdown("<h1 style='text-align: center; color:#004D40;'>🚘</h1>", unsafe_allow_html=True)
-            st.markdown("<h2 style='text-align: center; color: #333;'>YÖNETİM PANELİ</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: #333 !important;'>YÖNETİM PANELİ</h2>", unsafe_allow_html=True)
             with st.form("login_form"):
                 user = st.text_input("Kullanıcı Adı")
                 pw = st.text_input("Şifre", type="password")
@@ -299,9 +349,8 @@ def check_password():
 if check_password():
     show_logo()
     st.sidebar.title(" YEDEK PARÇA ") 
-    st.sidebar.caption("Yönetim Paneli") # Versiyon silindi
+    st.sidebar.caption("Yönetim Paneli")
     
-    # MENÜ SEÇENEKLERİ (Önce menüyü koyuyoruz)
     menu = st.sidebar.radio("MENÜ", [
         "📊 Dashboard", 
         "📝 Stok Hareket Girişi", 
@@ -310,7 +359,6 @@ if check_password():
         "⚙️ Ayarlar"
     ])
 
-    # ÇIKIŞ BUTONU (En alta, çizgiden sonra)
     st.sidebar.markdown("---")
     if st.sidebar.button("🚪 ÇIKIŞ YAP"):
         st.session_state["logged_in"] = False
@@ -351,7 +399,7 @@ if check_password():
                 if not df_har.empty:
                     top = df_har[df_har['IslemTipi'].str.contains('Çıkış')].groupby('UrunAdi')['Miktar'].sum().nlargest(10).reset_index()
                     fig = px.bar(top, x='UrunAdi', y='Miktar', color='Miktar', color_continuous_scale='Oranges')
-                    fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color="black")
+                    fig.update_layout(template="plotly_white", plot_bgcolor="#fff", paper_bgcolor="#fff", font_color="#000000")
                     st.plotly_chart(fig, use_container_width=True)
                 else: st.info("Veri yok.")
             
@@ -361,7 +409,7 @@ if check_password():
                     df_stok['Koridor'] = df_stok['RafYeri'].str.split('-').str[0]
                     raf = df_stok[df_stok['Koridor'].str.isnumeric()].groupby('Koridor').size().reset_index(name='Adet')
                     fig2 = px.pie(raf, values='Adet', names='Koridor', hole=0.4)
-                    fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="black")
+                    fig2.update_layout(template="plotly_white", paper_bgcolor="#fff", font_color="#000000")
                     st.plotly_chart(fig2, use_container_width=True)
                 else: st.info("Raf verisi yok.")
 
@@ -371,7 +419,7 @@ if check_password():
                 mod = df_stok['ModelUyumluluk'].value_counts().head(15).reset_index()
                 mod.columns = ['Model','Adet']
                 fig3 = px.bar(mod, x='Model', y='Adet', color='Adet', color_continuous_scale='Greens')
-                fig3.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font_color="black")
+                fig3.update_layout(template="plotly_white", plot_bgcolor="#fff", paper_bgcolor="#fff", font_color="#000000")
                 st.plotly_chart(fig3, use_container_width=True)
         else: st.warning("Veritabanı boş! Lütfen 'Ayarlar' menüsünden Excel dosyanızı yükleyiniz.")
 
@@ -425,7 +473,7 @@ if check_password():
             st.markdown("### 🛒 İşlem Listesi")
             if st.session_state['sepet']:
                 df_sepet = pd.DataFrame(st.session_state['sepet'])
-                st.dataframe(df_sepet[['UrunAdi', 'Miktar', 'Toplam']], use_container_width=True, hide_index=True)
+                st.dataframe(df_sepet[['UrunAdi', 'Miktar', 'Toplam']], hide_index=True)
                 genel_toplam = df_sepet['Toplam'].sum()
                 st.markdown(f"<h2 style='text-align:right; color:#E67E22;'>TOPLAM: {genel_toplam:,.2f} TL</h2>", unsafe_allow_html=True)
                 
@@ -484,7 +532,7 @@ if check_password():
             
             view['Durum'] = view.apply(lambda x: "⚠️ KRİTİK" if x['MevcutStok'] <= x['KritikLimit'] else "✅ OK", axis=1)
             
-            st.dataframe(view, use_container_width=True, height=500)
+            st.dataframe(view, height=500)
             st.markdown("### 📥 Listeyi Dışarı Aktar")
             indirme_butonlari(view, "filtrelenmis_stok_listesi")
 
@@ -536,7 +584,7 @@ if check_password():
                             try:
                                 conn.execute("""
                                     INSERT INTO stoklar (StokKodu, UrunAdi, RafYeri, SatisFiyati, SatisFiyatiNet, MevcutStok, PacalMaliyet, SonAlisFiyati, KritikLimit, Kategori, ModelUyumluluk, Segment, SonGuncelleme)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                     ON CONFLICT(StokKodu) DO UPDATE SET
                                     UrunAdi=excluded.UrunAdi, RafYeri=excluded.RafYeri, SatisFiyati=excluded.SatisFiyati, 
                                     SatisFiyatiNet=excluded.SatisFiyatiNet, MevcutStok=excluded.MevcutStok, PacalMaliyet=excluded.PacalMaliyet,
@@ -556,7 +604,7 @@ if check_password():
         t1, t2, t3, t4, t5 = st.tabs(["📦 Stok Envanter Raporu", "📊 ABC Analizi", "💰 Kârlılık", "🕸️ Hareketsiz Stoklar", "📋 Hareket Dökümü"])
         with t1:
             st.subheader("📋 Detaylı Stok Envanter Dökümü")
-            st.dataframe(df_stok, use_container_width=True)
+            st.dataframe(df_stok)
             indirme_butonlari(df_stok, "stok_envanteri")
         with t2:
             st.subheader("🅰️🅱️©️ Pareto (ABC) Analizi")
@@ -565,7 +613,7 @@ if check_password():
                 abc['Kumulatif'] = abc['GenelToplam'].cumsum()
                 abc['Yuzde'] = (abc['Kumulatif'] / abc['GenelToplam'].sum()) * 100
                 abc['Sinif'] = abc['Yuzde'].apply(lambda x: 'A' if x<=80 else ('B' if x<=95 else 'C'))
-                st.dataframe(abc, use_container_width=True)
+                st.dataframe(abc)
                 indirme_butonlari(abc, "abc_analizi")
             else: st.info("Satış verisi yok.")
         with t3:
@@ -574,17 +622,17 @@ if check_password():
                 kar = df_har[df_har['IslemTipi'].str.contains('Çıkış')].groupby('UrunAdi').agg({'Miktar':'sum', 'GenelToplam':'sum'}).reset_index()
                 kar = kar.merge(df_stok[['UrunAdi','SonAlisFiyati']], on='UrunAdi', how='left')
                 kar['NetKar'] = kar['GenelToplam'] - (kar['Miktar']*kar['SonAlisFiyati'])
-                st.dataframe(kar, use_container_width=True)
+                st.dataframe(kar)
                 indirme_butonlari(kar, "karlilik_raporu")
         with t4:
             st.subheader("🕸️ Hareketsiz Stoklar")
             olu = df_stok[~df_stok['UrunAdi'].isin(df_har[df_har['IslemTipi'].str.contains('Çıkış')]['UrunAdi'])]
-            st.dataframe(olu, use_container_width=True)
+            st.dataframe(olu)
             indirme_butonlari(olu, "olu_stok")
         with t5:
             st.subheader("📋 Hareket Dökümü (Detaylı)")
             df_log = df_har.sort_values('id', ascending=False)
-            st.dataframe(df_log, use_container_width=True)
+            st.dataframe(df_log)
             indirme_butonlari(df_log, "hareket_dokumu")
             st.markdown("---")
             st.error("🔴 **KAYIT SİLME ALANI**")
